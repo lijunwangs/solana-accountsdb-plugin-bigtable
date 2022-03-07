@@ -1,0 +1,58 @@
+[package]
+authors = ["Solana Maintainers <maintainers@solana.foundation>"]
+edition = "2021"
+name = "solana-accountsdb-plugin-bigtable"
+description = "The Solana AccountsDb plugin for Bigtable database."
+version = "1.9.6"
+repository = "https://github.com/solana-labs/solana-accountsdb-plugin-bigtable"
+license = "Apache-2.0"
+homepage = "https://solana.com/"
+documentation = "https://docs.rs/solana-accountsdb-plugin-bigtable"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+backoff = { version = "0.4.0", features = ["tokio"] }
+bincode = "1.3.3"
+bzip2 = "0.4.3"
+bs58 = "0.4.0"
+bytemuck = "1.7.2"
+chrono = { version = "0.4.11", features = ["serde"] }
+crossbeam-channel = "0.5"
+enum-iterator = "0.7.0"
+flate2 = "1.0.22"
+goauth = "0.11.1"
+log = "0.4.14"
+openssl = { version = "0.10" }
+prost = "0.9.0"
+prost-types = "0.9.0"
+serde = "1.0.136"
+serde_derive = "1.0.136"
+serde_json = "1.0.74"
+smpl_jwt = "0.6.1"
+solana-accountsdb-plugin-interface = { version = "=1.9.6" }
+solana-logger = { version = "=1.9.6" }
+solana-measure = { version = "=1.9.6" }
+solana-metrics = { version = "=1.9.6" }
+solana-runtime = { version = "=1.9.6" }
+solana-sdk = { version = "=1.9.6" }
+solana-transaction-status = { version = "=1.9.6" }
+thiserror = "1.0.30"
+tonic = { version = "0.6.2", features = ["tls", "transport"] }
+zstd = "0.9.0"
+
+[dev-dependencies]
+libc = "0.2.112"
+libloading = "0.7.2"
+
+serial_test = "0.5.1"
+solana-account-decoder = { version = "=1.9.6" }
+solana-core = { version = "=1.9.6" }
+solana-local-cluster = { version = "=1.9.6" }
+solana-net-utils = { version = "=1.9.6" }
+solana-streamer = { version = "=1.9.6" }
+tempfile = "3.2.0"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
