@@ -39,6 +39,8 @@ solana-runtime = { version = "=1.9.6" }
 solana-sdk = { version = "=1.9.6" }
 solana-transaction-status = { version = "=1.9.6" }
 thiserror = "1.0.30"
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.6", features = ["codec", "compat"] }
 tonic = { version = "0.6.2", features = ["tls", "transport"] }
 zstd = "0.9.0"
 

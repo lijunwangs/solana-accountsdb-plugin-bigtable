@@ -3,7 +3,7 @@ use {
     crate::{
         accounts_selector::AccountsSelector,
         transaction_selector::TransactionSelector,
-        bigtable_client::ParallelBigtableClient,
+        bigtable_client::AsyncBigtableClient,
     },
     bs58,
     log::*,
@@ -15,13 +15,13 @@ use {
     },
     solana_measure::measure::Measure,
     solana_metrics::*,
-    std::{fs::File, io::Read, sync::{Arc, RwLock}},
+    std::{fs::File, io::Read, time::Duration},
     thiserror::Error,
 };
 
 #[derive(Default)]
 pub struct AccountsDbPluginBigtable {
-    client: Option<ParallelBigtableClient>,
+    client: Option<AsyncBigtableClient>,
     accounts_selector: Option<AccountsSelector>,
     transaction_selector: Option<TransactionSelector>,
 }
@@ -35,18 +35,11 @@ impl std::fmt::Debug for AccountsDbPluginBigtable {
 /// The Configuration for the Bigtable plugin
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AccountsDbPluginBigtableConfig {
-    /// The host name or IP of the Bigtable server
-    pub host: Option<String>,
+    /// The path of the Bigtable credential file
+    pub credential_path: Option<String>,
 
-    /// The user name of the Bigtable server.
-    pub user: Option<String>,
-
-    /// The port number of the Bigtable database, the default is 5432
-    pub port: Option<u16>,
-
-    /// The connection string of Bigtable database, if this is set
-    /// `host`, `user` and `port` will be ignored.
-    pub connection_str: Option<String>,
+    /// Bigtable timeout
+    pub timeout: Option<Duration>,
 
     /// Controls the number of threads establishing connections to
     /// the Bigtable server. The default is 10.
@@ -62,19 +55,6 @@ pub struct AccountsDbPluginBigtableConfig {
 
     /// Indicates whether to store historical data for accounts
     pub store_account_historical_data: Option<bool>,
-
-    /// Controls whether to use SSL based connection to the database server.
-    /// The default is false
-    pub use_ssl: Option<bool>,
-
-    /// Specify the path to Bigtable server's certificate file
-    pub server_ca: Option<String>,
-
-    /// Specify the path to the local client's certificate file
-    pub client_cert: Option<String>,
-
-    /// Specify the path to the local client's private PEM key file.
-    pub client_key: Option<String>,
 
     /// Controls whether to index the token owners. The default is false
     pub index_token_owner: Option<bool>,
@@ -179,8 +159,8 @@ impl AccountsDbPlugin for AccountsDbPluginBigtable {
                 })
             }
             Ok(config) => {
-                // let client = PostgresClientBuilder::build_pararallel_postgres_client(&config)?;
-                // self.client = Some(client);
+                let client = AsyncBigtableClient::new(&config)?;
+                self.client = Some(client);
             }
         }
 
@@ -193,7 +173,7 @@ impl AccountsDbPlugin for AccountsDbPluginBigtable {
         match &mut self.client {
             None => {}
             Some(client) => {
-                client.join().unwrap();
+                client.join();
             }
         }
     }

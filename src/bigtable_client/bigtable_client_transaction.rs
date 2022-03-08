@@ -1,9 +1,6 @@
 use {
     crate::{
-        accountsdb_plugin_bigtable::{
-            AccountsDbPluginBigtableConfig, AccountsDbPluginBigtableError,
-        },
-        bigtable_client::{DbWorkItem, ParallelBigtableClient, SimpleBigtableClient},
+        bigtable_client::{AsyncBigtableClient, SimpleBigtableClient},
     },
     chrono::Utc,
     solana_runtime::bank::RewardType,
@@ -501,7 +498,7 @@ impl SimpleBigtableClient {
     }
 }
 
-impl ParallelBigtableClient {
+impl AsyncBigtableClient {
     fn build_transaction_request(
         slot: u64,
         transaction_info: &ReplicaTransactionInfo,
@@ -516,16 +513,7 @@ impl ParallelBigtableClient {
         transaction_info: &ReplicaTransactionInfo,
         slot: u64,
     ) -> Result<(), AccountsDbPluginError> {
-        let wrk_item = DbWorkItem::LogTransaction(Box::new(Self::build_transaction_request(
-            slot,
-            transaction_info,
-        )));
 
-        if let Err(err) = self.sender.send(wrk_item) {
-            return Err(AccountsDbPluginError::SlotStatusUpdateError {
-                msg: format!("Failed to update the transaction, error: {:?}", err),
-            });
-        }
         Ok(())
     }
 }
