@@ -1,12 +1,17 @@
 use {
     crate::{
-        bigtable_client::{AsyncBigtableClient},
+        bigtable_client::{AsyncBigtableClient, SimpleBigtableClient},
     },
+    chrono::Utc,
     log::*,
     solana_accountsdb_plugin_interface::accountsdb_plugin_interface::{
         AccountsDbPluginError, ReplicaAccountInfo,
     },
+    solana_measure::measure::Measure,
+    solana_metrics::*,
 };
+
+const ACCOUNT_COLUMN_COUNT: usize = 9;
 
 impl Eq for DbAccountInfo {}
 
@@ -106,6 +111,13 @@ pub trait ReadableAccountInfo: Sized {
     fn rent_epoch(&self) -> i64;
     fn data(&self) -> &[u8];
     fn write_version(&self) -> i64;
+}
+
+impl SimpleBigtableClient {
+    /// Update or insert a single account
+    pub fn upsert_account(&mut self, account: &DbAccountInfo) -> Result<(), AccountsDbPluginError> {
+        Ok(())
+    }
 }
 
 impl AsyncBigtableClient {
