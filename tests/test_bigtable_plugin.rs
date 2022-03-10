@@ -201,9 +201,8 @@ fn test_local_cluster_start_and_exit_with_config(socket_addr_space: SocketAddrSp
     assert_eq!(cluster.validators.len(), NUM_NODES);
 }
 
-#[test]
-#[serial]
-fn test_postgres_plugin() {
+#[tokio::test]
+async fn test_postgres_plugin() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
 
     unsafe {
@@ -239,9 +238,9 @@ fn test_postgres_plugin() {
     .unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
-    let plugin_config: AccountsDbPluginPostgresConfig = serde_json::from_str(&contents).unwrap();
+    let plugin_config: AccountsDbPluginBigtableConfig = serde_json::from_str(&contents).unwrap();
 
-    let result = SimplePostgresClient::connect_to_db(&plugin_config);
+    let result = SimpleBigtableClient::connect_to_db(&plugin_config).await;
     if result.is_err() {
         info!("Failed to connecto the PostgreSQL database. Please setup the database to run the integration tests. {:?}", result.err());
         return;
