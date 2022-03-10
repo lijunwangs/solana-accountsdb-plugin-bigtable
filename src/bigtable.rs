@@ -789,7 +789,7 @@ mod tests {
     use {
         super::*,
         super::super::stored_models::StoredConfirmedBlock,
-        // solana_accountsdb_plugin_bigtable::stored_models::StoredConfirmedBlock,
+        super::super::convert::generated,
         prost::Message,
         solana_sdk::{hash::Hash, signature::Keypair, system_transaction},
         solana_transaction_status::{
