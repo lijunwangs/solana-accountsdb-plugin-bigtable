@@ -1,7 +1,5 @@
 use {
-    crate::{
-        bigtable_client::{AsyncBigtableClient, SimpleBigtableClient},
-    },
+    crate::bigtable_client::{AsyncBigtableClient, SimpleBigtableClient},
     chrono::Utc,
     log::*,
     solana_accountsdb_plugin_interface::accountsdb_plugin_interface::{
@@ -115,20 +113,21 @@ pub trait ReadableAccountInfo: Sized {
 
 impl SimpleBigtableClient {
     /// Update or insert a single account
-    pub async fn upsert_account(&self, account: &DbAccountInfo) -> Result<(), AccountsDbPluginError> {
+    pub async fn upsert_account(
+        &self,
+        account: &DbAccountInfo,
+    ) -> Result<(), AccountsDbPluginError> {
         Ok(())
     }
 }
 
 impl AsyncBigtableClient {
-
     pub fn update_account(
         &mut self,
         account: &ReplicaAccountInfo,
         slot: u64,
         is_startup: bool,
     ) -> Result<(), AccountsDbPluginError> {
-
         let account = DbAccountInfo::new(account, slot);
 
         let client = &self.client;
@@ -139,5 +138,5 @@ impl AsyncBigtableClient {
         info!("Notifying the end of startup");
         info!("Done with notifying the end of startup");
         Ok(())
-    }    
+    }
 }

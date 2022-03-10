@@ -1,6 +1,6 @@
 use {
     enum_iterator::IntoEnumIterator,
-    serde::{Serialize, Deserialize},
+    serde::{Deserialize, Serialize},
     std::io::{self, BufReader, Read, Write},
 };
 

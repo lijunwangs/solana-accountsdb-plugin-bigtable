@@ -1,10 +1,10 @@
 use {
-    crate::{
-            bigtable_client::{bigtable_client_transaction::DbReward, AsyncBigtableClient, SimpleBigtableClient},
+    crate::bigtable_client::{
+        bigtable_client_transaction::DbReward, AsyncBigtableClient, SimpleBigtableClient,
     },
     solana_accountsdb_plugin_interface::accountsdb_plugin_interface::{
-        AccountsDbPluginError, ReplicaBlockInfo, SlotStatus
-    },    
+        AccountsDbPluginError, ReplicaBlockInfo, SlotStatus,
+    },
 };
 
 #[derive(Clone, Debug)]
@@ -34,14 +34,11 @@ pub struct UpdateBlockMetadataRequest {
     pub block_info: DbBlockInfo,
 }
 
-
 impl SimpleBigtableClient {
-
     pub(crate) fn update_block_metadata_impl(
         &mut self,
         block_info: UpdateBlockMetadataRequest,
     ) -> Result<(), AccountsDbPluginError> {
-
         Ok(())
     }
 }
@@ -53,7 +50,6 @@ impl AsyncBigtableClient {
         parent: Option<u64>,
         status: SlotStatus,
     ) -> Result<(), AccountsDbPluginError> {
-
         Ok(())
     }
 

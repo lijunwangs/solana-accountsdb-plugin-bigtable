@@ -787,9 +787,9 @@ where
 #[cfg(test)]
 mod tests {
     use {
-        super::*,
-        super::super::stored_models::StoredConfirmedBlock,
         super::super::convert::generated,
+        super::super::stored_models::StoredConfirmedBlock,
+        super::*,
         prost::Message,
         solana_sdk::{hash::Hash, signature::Keypair, system_transaction},
         solana_transaction_status::{

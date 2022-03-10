@@ -3,21 +3,16 @@ mod bigtable_client_account_index;
 mod bigtable_client_block_metadata;
 mod bigtable_client_transaction;
 
-
 use {
     crate::{
-        accountsdb_plugin_bigtable::{AccountsDbPluginBigtableError, AccountsDbPluginBigtableConfig},
+        accountsdb_plugin_bigtable::{
+            AccountsDbPluginBigtableConfig, AccountsDbPluginBigtableError,
+        },
         bigtable::BigTableConnection as Client,
     },
     log::*,
-    solana_accountsdb_plugin_interface::accountsdb_plugin_interface::{
-        AccountsDbPluginError,
-    },    
-    std::{
-        sync::{
-            Arc, Mutex,
-        },
-    },
+    solana_accountsdb_plugin_interface::accountsdb_plugin_interface::AccountsDbPluginError,
+    std::sync::{Arc, Mutex},
     tokio::runtime::Runtime,
 };
 
@@ -55,29 +50,31 @@ impl SimpleBigtableClient {
     pub async fn connect_to_db(
         config: &AccountsDbPluginBigtableConfig,
     ) -> Result<Client, AccountsDbPluginError> {
-
-        let result = Client::new("solana-accountsdb-plugin-bigtable", false, config.timeout, config.credential_path.clone()).await;
+        let result = Client::new(
+            "solana-accountsdb-plugin-bigtable",
+            false,
+            config.timeout,
+            config.credential_path.clone(),
+        )
+        .await;
 
         match result {
-            Ok(client) => {
-                Ok(client)
-            },
+            Ok(client) => Ok(client),
             Err(err) => {
                 let msg = format!(
                     "Error in connecting to Bigtable \"credential_path\": {:?}, : {}",
                     config.credential_path, err
                 );
-                Err(AccountsDbPluginError::Custom(
-                    Box::new(
-                        AccountsDbPluginBigtableError::DataStoreConnectionError {
-                            msg
-                        },
+                Err(AccountsDbPluginError::Custom(Box::new(
+                    AccountsDbPluginBigtableError::DataStoreConnectionError { msg },
                 )))
             }
         }
     }
 
-    pub async fn new(config: &AccountsDbPluginBigtableConfig) -> Result<Self, AccountsDbPluginError> {
+    pub async fn new(
+        config: &AccountsDbPluginBigtableConfig,
+    ) -> Result<Self, AccountsDbPluginError> {
         info!("Creating SimpleBigtableClient...");
         let client = Self::connect_to_db(config).await?;
 
@@ -87,12 +84,10 @@ impl SimpleBigtableClient {
 
         info!("Created SimpleBigtableClient.");
         Ok(Self {
-            client: Mutex::new(BigtableClientWrapper {
-                client,
-            }),
+            client: Mutex::new(BigtableClientWrapper { client }),
             index_token_owner: config.index_token_owner.unwrap_or_default(),
             index_token_mint: config.index_token_mint.unwrap_or(false),
-            store_account_historical_data
+            store_account_historical_data,
         })
     }
 }
@@ -104,7 +99,6 @@ pub struct AsyncBigtableClient {
 
 impl AsyncBigtableClient {
     pub fn new(config: &AccountsDbPluginBigtableConfig) -> Result<Self, AccountsDbPluginError> {
-
         let runtime = Arc::new(
             tokio::runtime::Builder::new_multi_thread()
                 .worker_threads(config.threads.unwrap_or(DEFAULT_THREADS_COUNT))
@@ -114,20 +108,13 @@ impl AsyncBigtableClient {
                 .expect("Runtime"),
         );
 
-        let client = runtime
-            .block_on(SimpleBigtableClient::new(config));
+        let client = runtime.block_on(SimpleBigtableClient::new(config));
 
         match client {
-            Ok(client) => {
-                Ok(Self{client, runtime})
-            },
-            Err(err) => {
-                Err(err)
-            }
+            Ok(client) => Ok(Self { client, runtime }),
+            Err(err) => Err(err),
         }
     }
 
-    pub fn join(&self) {
-
-    }
+    pub fn join(&self) {}
 }

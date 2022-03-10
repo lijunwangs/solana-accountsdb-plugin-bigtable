@@ -1,5 +1,5 @@
 use {
-    crate::{stored_models::{StoredExtendedRewards, StoredTransactionStatusMeta}},
+    crate::stored_models::{StoredExtendedRewards, StoredTransactionStatusMeta},
     solana_account_decoder::parse_token::{real_number_string_trimmed, UiTokenAmount},
     solana_sdk::{
         hash::Hash,

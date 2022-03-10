@@ -1,12 +1,10 @@
 use {
-    crate::{
-        bigtable_client::{AsyncBigtableClient, SimpleBigtableClient},
-    },
+    crate::bigtable_client::{AsyncBigtableClient, SimpleBigtableClient},
     chrono::Utc,
-    solana_runtime::bank::RewardType,
     solana_accountsdb_plugin_interface::accountsdb_plugin_interface::{
         AccountsDbPluginError, ReplicaTransactionInfo,
-    },    
+    },
+    solana_runtime::bank::RewardType,
     solana_sdk::{
         instruction::CompiledInstruction,
         message::{
@@ -131,7 +129,6 @@ pub struct DbTransaction {
 pub struct LogTransactionRequest {
     pub transaction_info: DbTransaction,
 }
-
 
 impl From<&MessageAddressTableLookup> for DbTransactionMessageAddressTableLookup {
     fn from(address_table_lookup: &MessageAddressTableLookup) -> Self {
@@ -482,7 +479,6 @@ impl From<&TransactionError> for DbTransactionErrorCode {
     }
 }
 
-
 impl SimpleBigtableClient {
     pub(crate) fn log_transaction_impl(
         &mut self,
@@ -513,7 +509,6 @@ impl AsyncBigtableClient {
         transaction_info: &ReplicaTransactionInfo,
         slot: u64,
     ) -> Result<(), AccountsDbPluginError> {
-
         Ok(())
     }
 }

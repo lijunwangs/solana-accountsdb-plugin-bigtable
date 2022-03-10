@@ -1,9 +1,8 @@
 /// Main entry for the Bigtable plugin
 use {
     crate::{
-        accounts_selector::AccountsSelector,
+        accounts_selector::AccountsSelector, bigtable_client::AsyncBigtableClient,
         transaction_selector::TransactionSelector,
-        bigtable_client::AsyncBigtableClient,
     },
     bs58,
     log::*,
@@ -216,8 +215,7 @@ impl AccountsDbPlugin for AccountsDbPluginBigtable {
                     None => {
                         return Err(AccountsDbPluginError::Custom(Box::new(
                             AccountsDbPluginBigtableError::DataStoreConnectionError {
-                                msg: "There is no connection to the Bigtable database."
-                                    .to_string(),
+                                msg: "There is no connection to the Bigtable database.".to_string(),
                             },
                         )));
                     }
@@ -389,7 +387,6 @@ impl AccountsDbPlugin for AccountsDbPluginBigtable {
             .map_or_else(|| false, |selector| selector.is_enabled())
     }
 }
-
 
 impl AccountsDbPluginBigtable {
     fn create_accounts_selector_from_config(config: &serde_json::Value) -> AccountsSelector {

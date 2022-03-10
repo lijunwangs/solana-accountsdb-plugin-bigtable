@@ -6,20 +6,20 @@ use {
     },
     solana_sdk::{
         clock::{Slot, UnixTimestamp},
-        deserialize_utils::default_on_eof, message::v0::LoadedAddresses,
+        deserialize_utils::default_on_eof,
+        message::v0::LoadedAddresses,
         signature::Signature,
         transaction::{Result, Transaction, TransactionError},
     },
     solana_transaction_status::{
         extract_and_fmt_memos, ConfirmedBlock, ConfirmedBlockWithOptionalMetadata,
         ConfirmedTransactionStatusWithSignature, ConfirmedTransactionWithOptionalMetadata,
-        InnerInstructions, Reward, RewardType,
-        TransactionByAddrInfo, TransactionConfirmationStatus, TransactionStatus,
-        TransactionStatusMeta, TransactionTokenBalance, TransactionWithMetadata, TransactionWithOptionalMetadata,
-    },    
+        InnerInstructions, Reward, RewardType, TransactionByAddrInfo,
+        TransactionConfirmationStatus, TransactionStatus, TransactionStatusMeta,
+        TransactionTokenBalance, TransactionWithMetadata, TransactionWithOptionalMetadata,
+    },
     std::str::FromStr,
 };
-
 
 pub type StoredExtendedRewards = Vec<StoredExtendedReward>;
 
@@ -234,7 +234,6 @@ impl From<TransactionStatusMeta> for StoredTransactionStatusMeta {
         }
     }
 }
-
 
 // A serialized `StoredConfirmedBlock` is stored in the `block` table
 //
