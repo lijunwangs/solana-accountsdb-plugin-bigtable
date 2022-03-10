@@ -115,7 +115,7 @@ pub trait ReadableAccountInfo: Sized {
 
 impl SimpleBigtableClient {
     /// Update or insert a single account
-    pub fn upsert_account(&mut self, account: &DbAccountInfo) -> Result<(), AccountsDbPluginError> {
+    pub async fn upsert_account(&self, account: &DbAccountInfo) -> Result<(), AccountsDbPluginError> {
         Ok(())
     }
 }
@@ -130,7 +130,9 @@ impl AsyncBigtableClient {
     ) -> Result<(), AccountsDbPluginError> {
 
         let account = DbAccountInfo::new(account, slot);
-        Ok(())
+
+        let client = &self.client;
+        self.runtime.block_on(client.upsert_account(&account))
     }
 
     pub fn notify_end_of_startup(&mut self) -> Result<(), AccountsDbPluginError> {

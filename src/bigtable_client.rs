@@ -47,6 +47,7 @@ struct BigtableClientWrapper {
 pub struct SimpleBigtableClient {
     index_token_owner: bool,
     index_token_mint: bool,
+    store_account_historical_data: bool,
     client: Mutex<BigtableClientWrapper>,
 }
 
@@ -91,6 +92,7 @@ impl SimpleBigtableClient {
             }),
             index_token_owner: config.index_token_owner.unwrap_or_default(),
             index_token_mint: config.index_token_mint.unwrap_or(false),
+            store_account_historical_data
         })
     }
 }
@@ -100,14 +102,12 @@ pub struct AsyncBigtableClient {
     runtime: Arc<Runtime>,
 }
 
-const DEFAULT_THREADS: usize = 10;
-
 impl AsyncBigtableClient {
     pub fn new(config: &AccountsDbPluginBigtableConfig) -> Result<Self, AccountsDbPluginError> {
 
         let runtime = Arc::new(
             tokio::runtime::Builder::new_multi_thread()
-                .worker_threads(config.threads.unwrap_or(DEFAULT_THREADS))
+                .worker_threads(config.threads.unwrap_or(DEFAULT_THREADS_COUNT))
                 .thread_name("sol-acountsdb-plugin-bigtable")
                 .enable_all()
                 .build()
