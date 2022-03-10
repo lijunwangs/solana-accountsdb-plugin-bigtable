@@ -122,8 +122,8 @@ impl AccountsDbPlugin for AccountsDbPluginBigtable {
     /// # Examples
     ///
     /// {
-    ///    "libpath": "/home/solana/target/release/libsolana_accountsdb_plugin_postgres.so",
-    ///    "host": "host_foo",
+    ///    "libpath": "/home/solana/target/release/libsolana_accountsdb_plugin_bigtable.so",
+    ///    "credential_path": "/home/solana/bigtable_cred.txt",
     ///    "user": "solana",
     ///    "threads": 10,
     ///    "accounts_selector" : {

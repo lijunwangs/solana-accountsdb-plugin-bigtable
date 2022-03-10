@@ -7,7 +7,6 @@ use serde_json::json;
 use {
     libloading::Library,
     log::*,
-    serial_test::serial,
     solana_accountsdb_plugin_bigtable::{
         accountsdb_plugin_bigtable::AccountsDbPluginBigtableConfig,
         bigtable_client::SimpleBigtableClient,
@@ -110,7 +109,7 @@ fn generate_accountsdb_plugin_config() -> (TempDir, PathBuf) {
     let mut config_file = File::create(path.clone()).unwrap();
 
     let mut config_content = json!({
-        "libpath": "libsolana_accountsdb_plugin_postgres.so",
+        "libpath": "libsolana_accountsdb_plugin_bigtable.so",
         "connection_str": "host=localhost user=solana password=solana port=5432",
         "threads": 20,
         "batch_size": 20,
@@ -124,7 +123,7 @@ fn generate_accountsdb_plugin_config() -> (TempDir, PathBuf) {
     });
 
     if std::env::consts::OS == "macos" {
-        config_content["libpath"] = json!("libsolana_accountsdb_plugin_postgres.dylib");
+        config_content["libpath"] = json!("libsolana_accountsdb_plugin_bigtable.dylib");
     }
 
     write!(config_file, "{}", config_content.to_string()).unwrap();
@@ -202,13 +201,13 @@ fn test_local_cluster_start_and_exit_with_config(socket_addr_space: SocketAddrSp
 }
 
 #[tokio::test]
-async fn test_postgres_plugin() {
+async fn test_bigtable_plugin() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
 
     unsafe {
         let filename = match std::env::consts::OS {
-            "macos" => "libsolana_accountsdb_plugin_postgres.dylib",
-            _ => "libsolana_accountsdb_plugin_postgres.so",
+            "macos" => "libsolana_accountsdb_plugin_bigtable.dylib",
+            _ => "libsolana_accountsdb_plugin_bigtable.so",
         };
 
         let lib = Library::new(filename);
@@ -242,7 +241,7 @@ async fn test_postgres_plugin() {
 
     let result = SimpleBigtableClient::connect_to_db(&plugin_config).await;
     if result.is_err() {
-        info!("Failed to connecto the PostgreSQL database. Please setup the database to run the integration tests. {:?}", result.err());
+        info!("Failed to connecto the Bigtable database. Please setup the database to run the integration tests. {:?}", result.err());
         return;
     }
 
