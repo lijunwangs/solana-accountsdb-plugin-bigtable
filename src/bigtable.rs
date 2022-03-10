@@ -788,16 +788,13 @@ where
 mod tests {
     use {
         super::*,
-        crate::StoredConfirmedBlock,
+        super::super::stored_models::StoredConfirmedBlock,
+        // solana_accountsdb_plugin_bigtable::stored_models::StoredConfirmedBlock,
         prost::Message,
-        solana_sdk::{
-            hash::Hash, message::v0::LoadedAddresses, signature::Keypair, system_transaction,
-            transaction::VersionedTransaction,
-        },
-        solana_storage_proto::convert::generated,
+        solana_sdk::{hash::Hash, signature::Keypair, system_transaction},
         solana_transaction_status::{
-            ConfirmedBlock, TransactionStatusMeta, TransactionWithStatusMeta,
-            VersionedTransactionWithStatusMeta,
+            ConfirmedBlock, ConfirmedBlockWithOptionalMetadata, TransactionStatusMeta,
+            TransactionWithMetadata,
         },
         std::convert::TryInto,
     };
@@ -817,7 +814,7 @@ mod tests {
             previous_blockhash,
             blockhash,
             parent_slot,
-            transactions: transactions.into_iter().map(|tx| tx.into()).collect(),
+            transactions: transactions.into_iter().map(Into::into).collect(),
             rewards: rewards.into_iter().map(|r| r.into()).collect(),
             block_time: block_time.map(|timestamp| generated::UnixTimestamp { timestamp }),
             block_height: block_height.map(|block_height| generated::BlockHeight { block_height }),
@@ -829,8 +826,8 @@ mod tests {
         let from = Keypair::new();
         let recipient = solana_sdk::pubkey::new_rand();
         let transaction = system_transaction::transfer(&from, &recipient, 42, Hash::default());
-        let with_meta = TransactionWithStatusMeta::Complete(VersionedTransactionWithStatusMeta {
-            transaction: VersionedTransaction::from(transaction),
+        let with_meta = TransactionWithMetadata {
+            transaction,
             meta: TransactionStatusMeta {
                 status: Ok(()),
                 fee: 1,
@@ -841,9 +838,8 @@ mod tests {
                 pre_token_balances: Some(vec![]),
                 post_token_balances: Some(vec![]),
                 rewards: Some(vec![]),
-                loaded_addresses: LoadedAddresses::default(),
             },
-        });
+        };
         let expected_block = ConfirmedBlock {
             transactions: vec![with_meta],
             parent_slot: 1,
@@ -854,7 +850,10 @@ mod tests {
             block_height: Some(1),
         };
         let bincode_block = compress_best(
-            &bincode::serialize::<StoredConfirmedBlock>(&expected_block.clone().into()).unwrap(),
+            &bincode::serialize::<StoredConfirmedBlock>(
+                &ConfirmedBlockWithOptionalMetadata::from(expected_block.clone()).into(),
+            )
+            .unwrap(),
         )
         .unwrap();
 
@@ -873,7 +872,10 @@ mod tests {
         )
         .unwrap();
         if let CellData::Protobuf(protobuf_block) = deserialized {
-            assert_eq!(expected_block, protobuf_block.try_into().unwrap());
+            assert_eq!(
+                ConfirmedBlockWithOptionalMetadata::from(expected_block.clone()),
+                protobuf_block.try_into().unwrap(),
+            );
         } else {
             panic!("deserialization should produce CellData::Protobuf");
         }
@@ -889,18 +891,18 @@ mod tests {
         .unwrap();
         if let CellData::Bincode(bincode_block) = deserialized {
             let mut block = expected_block;
-            if let TransactionWithStatusMeta::Complete(VersionedTransactionWithStatusMeta {
-                meta,
-                ..
-            }) = &mut block.transactions[0]
             {
+                let mut meta = &mut block.transactions[0].meta;
                 meta.inner_instructions = None; // Legacy bincode implementation does not support inner_instructions
                 meta.log_messages = None; // Legacy bincode implementation does not support log_messages
                 meta.pre_token_balances = None; // Legacy bincode implementation does not support token balances
                 meta.post_token_balances = None; // Legacy bincode implementation does not support token balances
                 meta.rewards = None; // Legacy bincode implementation does not support rewards
             }
-            assert_eq!(block, bincode_block.into());
+            assert_eq!(
+                ConfirmedBlockWithOptionalMetadata::from(block),
+                ConfirmedBlockWithOptionalMetadata::from(bincode_block)
+            );
         } else {
             panic!("deserialization should produce CellData::Bincode");
         }
