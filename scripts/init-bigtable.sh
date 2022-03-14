@@ -5,7 +5,7 @@
 
 set -e
 
-instance=solana-ledger
+instance=solana-accountsdb-plugin-bigtable
 
 cbt=(
   cbt
