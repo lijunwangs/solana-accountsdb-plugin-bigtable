@@ -16,7 +16,7 @@ if [[ -n $BIGTABLE_EMULATOR_HOST ]]; then
   cbt+=(-project emulator)
 fi
 
-for table in blocks tx tx-by-addr; do
+for table in account slot block transaction; do
   (
     set -x
     "${cbt[@]}" createtable $table

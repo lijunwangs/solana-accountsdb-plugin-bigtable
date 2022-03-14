@@ -110,7 +110,7 @@ fn generate_accountsdb_plugin_config() -> (TempDir, PathBuf) {
 
     let mut config_content = json!({
         "libpath": "libsolana_accountsdb_plugin_bigtable.so",
-        "credential_path\": "host=localhost user=solana password=solana port=5432",
+        "credential_path": "host=localhost user=solana password=solana port=5432",
         "threads": 20,
         "batch_size": 20,
         "panic_on_db_errors": true,
@@ -200,7 +200,7 @@ fn test_local_cluster_start_and_exit_with_config(socket_addr_space: SocketAddrSp
     assert_eq!(cluster.validators.len(), NUM_NODES);
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn test_bigtable_plugin() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
 
