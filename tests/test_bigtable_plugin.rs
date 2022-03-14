@@ -110,7 +110,7 @@ fn generate_accountsdb_plugin_config() -> (TempDir, PathBuf) {
 
     let mut config_content = json!({
         "libpath": "libsolana_accountsdb_plugin_bigtable.so",
-        "connection_str": "host=localhost user=solana password=solana port=5432",
+        "credential_path\": "host=localhost user=solana password=solana port=5432",
         "threads": 20,
         "batch_size": 20,
         "panic_on_db_errors": true,
