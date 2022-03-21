@@ -1,5 +1,7 @@
 #![allow(clippy::integer_arithmetic)]
 
+/// For integration tests locally, use the Google Bigtable Emulator.
+/// See this project's README.md
 use serde_json::json;
 
 /// The test will cover transmitting accounts, transaction and slot and
@@ -110,7 +112,6 @@ fn generate_accountsdb_plugin_config() -> (TempDir, PathBuf) {
 
     let mut config_content = json!({
         "libpath": "libsolana_accountsdb_plugin_bigtable.so",
-        "credential_path": "host=localhost user=solana password=solana port=5432",
         "threads": 20,
         "batch_size": 20,
         "panic_on_db_errors": true,
@@ -241,9 +242,11 @@ async fn test_bigtable_plugin() {
 
     let result = SimpleBigtableClient::connect_to_db(&plugin_config).await;
     if result.is_err() {
-        info!("Failed to connecto the Bigtable database. Please setup the database to run the integration tests. {:?}", result.err());
+        error!("Failed to connecto the Bigtable database. Please setup the database to run the integration tests. {:?}", result.err());
         return;
     }
+
+    info!("Connected to Bigtable!");
 
     let stake = 10_000;
     let mut config = ClusterConfig {
