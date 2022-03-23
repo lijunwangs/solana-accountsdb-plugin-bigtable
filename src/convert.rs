@@ -23,16 +23,24 @@ use {
 pub mod generated {
     include!(concat!(
         env!("OUT_DIR"),
-        "/solana.storage.confirmed_block.rs"
+        "/solana.accountsdb.plugin.confirmed_block.rs"
     ));
 }
 
 pub mod tx_by_addr {
     include!(concat!(
         env!("OUT_DIR"),
-        "/solana.storage.transaction_by_addr.rs"
+        "/solana.accountsdb.plugin.transaction_by_addr.rs"
     ));
 }
+
+pub mod accounts {
+    include!(concat!(
+        env!("OUT_DIR"),
+        "/solana.accountsdb.plugin.account.rs"
+    ));
+}
+
 
 impl From<Vec<Reward>> for generated::Rewards {
     fn from(rewards: Vec<Reward>) -> Self {

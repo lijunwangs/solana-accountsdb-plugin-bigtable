@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package solana.accountsdb.plugin.bigtable.Account;
+package solana.accountsdb.plugin.Account;
 
 message account {
     bytes pubkey = 1;
