@@ -1,5 +1,8 @@
 use {
-    crate::bigtable_client::{AsyncBigtableClient, SimpleBigtableClient},
+    crate::{
+        bigtable_client::{AsyncBigtableClient, SimpleBigtableClient},
+        convert::accounts,
+    },
     chrono::Utc,
     log::*,
     solana_accountsdb_plugin_interface::accountsdb_plugin_interface::{
@@ -7,6 +10,7 @@ use {
     },
     solana_measure::measure::Measure,
     solana_metrics::*,
+    solana_sdk::pubkey::Pubkey,
 };
 
 const ACCOUNT_COLUMN_COUNT: usize = 9;
@@ -111,13 +115,41 @@ pub trait ReadableAccountInfo: Sized {
     fn write_version(&self) -> i64;
 }
 
+impl From<&DbAccountInfo> for accounts::Account {
+    fn from(account: &DbAccountInfo) -> Self {
+        accounts::Account {
+            pubkey: account.pubkey().to_vec(),
+            owner: account.owner().to_vec(),
+            lamports: account.lamports() as u64,
+            slot: account.slot as u64,
+            executable: account.executable(),
+            rent_epoch: account.rent_epoch() as u64,
+            data: account.data().to_vec(),
+            write_version: account.write_version as u64,
+            updated_on: Some(accounts::UnixTimestamp { timestamp: 12345 }),
+        }
+    }
+}
+
 impl SimpleBigtableClient {
     /// Update or insert a single account
     pub async fn upsert_account(
-        &self,
+        &mut self,
         account: &DbAccountInfo,
     ) -> Result<(), AccountsDbPluginError> {
-        Ok(())
+        let client = self.client.get_mut().unwrap();
+        let account_cells = [(
+            Pubkey::new(account.pubkey()).to_string(),
+            accounts::Account::from(account),
+        )];
+        let result = client
+            .client
+            .put_protobuf_cells_with_retry::<accounts::Account>("account", &account_cells)
+            .await;
+        match result {
+            Ok(_size) => Ok(()),
+            Err(err) => Err(AccountsDbPluginError::Custom(Box::new(err))),
+        }
     }
 }
 
@@ -130,7 +162,7 @@ impl AsyncBigtableClient {
     ) -> Result<(), AccountsDbPluginError> {
         let account = DbAccountInfo::new(account, slot);
 
-        let client = &self.client;
+        let client = &mut self.client;
         self.runtime.block_on(client.upsert_account(&account))
     }
 

@@ -462,7 +462,6 @@ impl AccountsDbPluginBigtable {
     }
 }
 
-
 #[no_mangle]
 #[allow(improper_ctypes_definitions)]
 /// # Safety

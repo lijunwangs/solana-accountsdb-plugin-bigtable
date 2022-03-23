@@ -41,7 +41,6 @@ pub mod accounts {
     ));
 }
 
-
 impl From<Vec<Reward>> for generated::Rewards {
     fn from(rewards: Vec<Reward>) -> Self {
         Self {
