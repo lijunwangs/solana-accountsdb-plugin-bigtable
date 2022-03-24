@@ -5,8 +5,8 @@ use {
     },
     chrono::Utc,
     log::*,
-    solana_accountsdb_plugin_interface::accountsdb_plugin_interface::{
-        AccountsDbPluginError, ReplicaAccountInfo,
+    solana_geyser_plugin_interface::geyser_plugin_interface::{
+        GeyserPluginError, ReplicaAccountInfo,
     },
     solana_measure::measure::Measure,
     solana_metrics::*,
@@ -136,7 +136,7 @@ impl SimpleBigtableClient {
     pub async fn upsert_account(
         &mut self,
         account: &DbAccountInfo,
-    ) -> Result<(), AccountsDbPluginError> {
+    ) -> Result<(), GeyserPluginError> {
         let client = self.client.get_mut().unwrap();
         let account_cells = [(
             Pubkey::new(account.pubkey()).to_string(),
@@ -152,7 +152,7 @@ impl SimpleBigtableClient {
             }
             Err(err) => {
                 error!("Error persisting into the database: {}", err);
-                Err(AccountsDbPluginError::Custom(Box::new(err)))
+                Err(GeyserPluginError::Custom(Box::new(err)))
             }
         }
     }
@@ -164,14 +164,14 @@ impl AsyncBigtableClient {
         account: &ReplicaAccountInfo,
         slot: u64,
         is_startup: bool,
-    ) -> Result<(), AccountsDbPluginError> {
+    ) -> Result<(), GeyserPluginError> {
         let account = DbAccountInfo::new(account, slot);
 
         let client = &mut self.client;
         self.runtime.block_on(client.upsert_account(&account))
     }
 
-    pub fn notify_end_of_startup(&mut self) -> Result<(), AccountsDbPluginError> {
+    pub fn notify_end_of_startup(&mut self) -> Result<(), GeyserPluginError> {
         info!("Notifying the end of startup");
         info!("Done with notifying the end of startup");
         Ok(())

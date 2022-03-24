@@ -1,8 +1,8 @@
 use {
     crate::bigtable_client::{AsyncBigtableClient, SimpleBigtableClient},
     chrono::Utc,
-    solana_accountsdb_plugin_interface::accountsdb_plugin_interface::{
-        AccountsDbPluginError, ReplicaTransactionInfo,
+    solana_geyser_plugin_interface::geyser_plugin_interface::{
+        GeyserPluginError, ReplicaTransactionInfo,
     },
     solana_runtime::bank::RewardType,
     solana_sdk::{
@@ -232,11 +232,11 @@ impl From<&v0::Message> for DbTransactionMessageV0 {
     }
 }
 
-impl From<&v0::LoadedMessage> for DbLoadedMessageV0 {
+impl From<&v0::LoadedMessage<'_>> for DbLoadedMessageV0 {
     fn from(message: &v0::LoadedMessage) -> Self {
         Self {
-            message: DbTransactionMessageV0::from(&message.message),
-            loaded_addresses: DbLoadedAddresses::from(&message.loaded_addresses),
+            message: DbTransactionMessageV0::from(&message.message as &v0::Message),
+            loaded_addresses: DbLoadedAddresses::from(&message.loaded_addresses as &LoadedAddresses),
         }
     }
 }
@@ -461,9 +461,12 @@ impl From<&TransactionError> for DbTransactionErrorCode {
             TransactionError::WouldExceedMaxBlockCostLimit => Self::WouldExceedMaxBlockCostLimit,
             TransactionError::UnsupportedVersion => Self::UnsupportedVersion,
             TransactionError::InvalidWritableAccount => Self::InvalidWritableAccount,
-            TransactionError::WouldExceedMaxAccountDataCostLimit => {
+            TransactionError::WouldExceedAccountDataBlockLimit => {
                 Self::WouldExceedMaxAccountDataCostLimit
-            }
+            },
+            TransactionError::WouldExceedAccountDataTotalLimit => {
+                Self::WouldExceedMaxAccountDataCostLimit
+            },
             TransactionError::TooManyAccountLocks => Self::TooManyAccountLocks,
             TransactionError::AddressLookupTableNotFound => Self::AddressLookupTableNotFound,
             TransactionError::InvalidAddressLookupTableOwner => {
@@ -483,7 +486,7 @@ impl SimpleBigtableClient {
     pub(crate) fn log_transaction_impl(
         &mut self,
         transaction_log_info: LogTransactionRequest,
-    ) -> Result<(), AccountsDbPluginError> {
+    ) -> Result<(), GeyserPluginError> {
         let client = self.client.get_mut().unwrap();
         let client = &mut client.client;
         let updated_on = Utc::now().naive_utc();
@@ -508,7 +511,7 @@ impl AsyncBigtableClient {
         &mut self,
         transaction_info: &ReplicaTransactionInfo,
         slot: u64,
-    ) -> Result<(), AccountsDbPluginError> {
+    ) -> Result<(), GeyserPluginError> {
         Ok(())
     }
 }

@@ -2,8 +2,8 @@ use {
     crate::bigtable_client::{
         bigtable_client_transaction::DbReward, AsyncBigtableClient, SimpleBigtableClient,
     },
-    solana_accountsdb_plugin_interface::accountsdb_plugin_interface::{
-        AccountsDbPluginError, ReplicaBlockInfo, SlotStatus,
+    solana_geyser_plugin_interface::geyser_plugin_interface::{
+        GeyserPluginError, ReplicaBlockInfo, SlotStatus,
     },
 };
 
@@ -38,7 +38,7 @@ impl SimpleBigtableClient {
     pub(crate) fn update_block_metadata_impl(
         &mut self,
         block_info: UpdateBlockMetadataRequest,
-    ) -> Result<(), AccountsDbPluginError> {
+    ) -> Result<(), GeyserPluginError> {
         Ok(())
     }
 }
@@ -49,14 +49,14 @@ impl AsyncBigtableClient {
         slot: u64,
         parent: Option<u64>,
         status: SlotStatus,
-    ) -> Result<(), AccountsDbPluginError> {
+    ) -> Result<(), GeyserPluginError> {
         Ok(())
     }
 
     pub fn update_block_metadata(
         &mut self,
         block_info: &ReplicaBlockInfo,
-    ) -> Result<(), AccountsDbPluginError> {
+    ) -> Result<(), GeyserPluginError> {
         Ok(())
     }
 }

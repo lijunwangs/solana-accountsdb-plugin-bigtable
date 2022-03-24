@@ -1,6 +1,6 @@
 pub mod access_token;
 pub mod accounts_selector;
-pub mod accountsdb_plugin_bigtable;
+pub mod geyser_plugin_bigtable;
 pub mod bigtable;
 pub mod bigtable_client;
 pub mod compression;

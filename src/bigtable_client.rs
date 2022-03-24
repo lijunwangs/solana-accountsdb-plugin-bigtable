@@ -5,13 +5,13 @@ mod bigtable_client_transaction;
 
 use {
     crate::{
-        accountsdb_plugin_bigtable::{
-            AccountsDbPluginBigtableConfig, AccountsDbPluginBigtableError,
+        geyser_plugin_bigtable::{
+            GeyserPluginBigtableConfig, GeyserPluginBigtableError,
         },
         bigtable::BigTableConnection as Client,
     },
     log::*,
-    solana_accountsdb_plugin_interface::accountsdb_plugin_interface::AccountsDbPluginError,
+    solana_geyser_plugin_interface::geyser_plugin_interface::GeyserPluginError,
     std::sync::{Arc, Mutex},
     tokio::runtime::Runtime,
 };
@@ -48,10 +48,10 @@ pub struct SimpleBigtableClient {
 
 impl SimpleBigtableClient {
     pub async fn connect_to_db(
-        config: &AccountsDbPluginBigtableConfig,
-    ) -> Result<Client, AccountsDbPluginError> {
+        config: &GeyserPluginBigtableConfig,
+    ) -> Result<Client, GeyserPluginError> {
         let result = Client::new(
-            "solana-accountsdb-plugin-bigtable",
+            "solana-geyser-plugin-bigtable",
             false,
             config.timeout,
             config.credential_path.clone(),
@@ -65,16 +65,16 @@ impl SimpleBigtableClient {
                     "Error in connecting to Bigtable \"credential_path\": {:?}, : {}",
                     config.credential_path, err
                 );
-                Err(AccountsDbPluginError::Custom(Box::new(
-                    AccountsDbPluginBigtableError::DataStoreConnectionError { msg },
+                Err(GeyserPluginError::Custom(Box::new(
+                    GeyserPluginBigtableError::DataStoreConnectionError { msg },
                 )))
             }
         }
     }
 
     pub async fn new(
-        config: &AccountsDbPluginBigtableConfig,
-    ) -> Result<Self, AccountsDbPluginError> {
+        config: &GeyserPluginBigtableConfig,
+    ) -> Result<Self, GeyserPluginError> {
         info!("Creating SimpleBigtableClient...");
         let client = Self::connect_to_db(config).await?;
 
@@ -98,7 +98,7 @@ pub struct AsyncBigtableClient {
 }
 
 impl AsyncBigtableClient {
-    pub fn new(config: &AccountsDbPluginBigtableConfig) -> Result<Self, AccountsDbPluginError> {
+    pub fn new(config: &GeyserPluginBigtableConfig) -> Result<Self, GeyserPluginError> {
         let runtime = Arc::new(
             tokio::runtime::Builder::new_multi_thread()
                 .worker_threads(config.threads.unwrap_or(DEFAULT_THREADS_COUNT))

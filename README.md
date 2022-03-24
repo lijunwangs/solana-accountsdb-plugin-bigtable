@@ -1,4 +1,4 @@
-# solana-accountsdb-plugin-bigtable
+# solana-geyser-plugin-bigtable
 Solana AccountsDb Plugin for Google Bigtable
 This is a WIP -- do not use for production!
 

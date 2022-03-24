@@ -12,11 +12,7 @@ use {
         transaction::{Result, Transaction, TransactionError},
     },
     solana_transaction_status::{
-        extract_and_fmt_memos, ConfirmedBlock, ConfirmedBlockWithOptionalMetadata,
-        ConfirmedTransactionStatusWithSignature, ConfirmedTransactionWithOptionalMetadata,
-        InnerInstructions, Reward, RewardType, TransactionByAddrInfo,
-        TransactionConfirmationStatus, TransactionStatus, TransactionStatusMeta,
-        TransactionTokenBalance, TransactionWithMetadata, TransactionWithOptionalMetadata,
+        InnerInstructions, Reward, RewardType, TransactionStatusMeta, TransactionTokenBalance,
     },
     std::str::FromStr,
 };
@@ -201,12 +197,14 @@ impl From<StoredTransactionStatusMeta> for TransactionStatusMeta {
                 .map(|balances| balances.into_iter().map(|balance| balance.into()).collect()),
             rewards: rewards
                 .map(|rewards| rewards.into_iter().map(|reward| reward.into()).collect()),
+            loaded_addresses: LoadedAddresses::default(),
         }
     }
 }
 
-impl From<TransactionStatusMeta> for StoredTransactionStatusMeta {
-    fn from(value: TransactionStatusMeta) -> Self {
+impl TryFrom<TransactionStatusMeta> for StoredTransactionStatusMeta {
+    type Error = bincode::Error;
+    fn try_from(value: TransactionStatusMeta) -> std::result::Result<Self, Self::Error> {
         let TransactionStatusMeta {
             status,
             fee,
@@ -217,8 +215,18 @@ impl From<TransactionStatusMeta> for StoredTransactionStatusMeta {
             pre_token_balances,
             post_token_balances,
             rewards,
+            loaded_addresses,
         } = value;
-        Self {
+
+        if !loaded_addresses.is_empty() {
+            // Deprecated bincode serialized status metadata doesn't support
+            // loaded addresses.
+            return Err(
+                bincode::ErrorKind::Custom("Bincode serialization is deprecated".into()).into(),
+            );
+        }
+
+        Ok(Self {
             status,
             fee,
             pre_balances,
@@ -231,253 +239,6 @@ impl From<TransactionStatusMeta> for StoredTransactionStatusMeta {
                 .map(|balances| balances.into_iter().map(|balance| balance.into()).collect()),
             rewards: rewards
                 .map(|rewards| rewards.into_iter().map(|reward| reward.into()).collect()),
-        }
-    }
-}
-
-// A serialized `StoredConfirmedBlock` is stored in the `block` table
-//
-// StoredConfirmedBlock holds the same contents as ConfirmedBlock, but is slightly compressed and avoids
-// some serde JSON directives that cause issues with bincode
-//
-// Note: in order to continue to support old bincode-serialized bigtable entries, if new fields are
-// added to ConfirmedBlock, they must either be excluded or set to `default_on_eof` here
-//
-#[derive(Serialize, Deserialize)]
-pub struct StoredConfirmedBlock {
-    previous_blockhash: String,
-    blockhash: String,
-    parent_slot: Slot,
-    transactions: Vec<StoredConfirmedBlockTransaction>,
-    rewards: StoredConfirmedBlockRewards,
-    block_time: Option<UnixTimestamp>,
-    #[serde(deserialize_with = "default_on_eof")]
-    block_height: Option<u64>,
-}
-
-#[cfg(test)]
-impl From<ConfirmedBlockWithOptionalMetadata> for StoredConfirmedBlock {
-    fn from(confirmed_block: ConfirmedBlockWithOptionalMetadata) -> Self {
-        let ConfirmedBlockWithOptionalMetadata {
-            previous_blockhash,
-            blockhash,
-            parent_slot,
-            transactions,
-            rewards,
-            block_time,
-            block_height,
-        } = confirmed_block;
-
-        Self {
-            previous_blockhash,
-            blockhash,
-            parent_slot,
-            transactions: transactions.into_iter().map(|tx| tx.into()).collect(),
-            rewards: rewards.into_iter().map(|reward| reward.into()).collect(),
-            block_time,
-            block_height,
-        }
-    }
-}
-
-impl From<StoredConfirmedBlock> for ConfirmedBlockWithOptionalMetadata {
-    fn from(confirmed_block: StoredConfirmedBlock) -> Self {
-        let StoredConfirmedBlock {
-            previous_blockhash,
-            blockhash,
-            parent_slot,
-            transactions,
-            rewards,
-            block_time,
-            block_height,
-        } = confirmed_block;
-
-        Self {
-            previous_blockhash,
-            blockhash,
-            parent_slot,
-            transactions: transactions.into_iter().map(|tx| tx.into()).collect(),
-            rewards: rewards.into_iter().map(|reward| reward.into()).collect(),
-            block_time,
-            block_height,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-struct StoredConfirmedBlockTransaction {
-    transaction: Transaction,
-    meta: Option<StoredConfirmedBlockTransactionStatusMeta>,
-}
-
-#[cfg(test)]
-impl From<TransactionWithOptionalMetadata> for StoredConfirmedBlockTransaction {
-    fn from(value: TransactionWithOptionalMetadata) -> Self {
-        Self {
-            transaction: value.transaction,
-            meta: value.meta.map(|meta| meta.into()),
-        }
-    }
-}
-
-impl From<StoredConfirmedBlockTransaction> for TransactionWithOptionalMetadata {
-    fn from(value: StoredConfirmedBlockTransaction) -> Self {
-        Self {
-            transaction: value.transaction,
-            meta: value.meta.map(|meta| meta.into()),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-struct StoredConfirmedBlockTransactionStatusMeta {
-    err: Option<TransactionError>,
-    fee: u64,
-    pre_balances: Vec<u64>,
-    post_balances: Vec<u64>,
-}
-
-impl From<StoredConfirmedBlockTransactionStatusMeta> for TransactionStatusMeta {
-    fn from(value: StoredConfirmedBlockTransactionStatusMeta) -> Self {
-        let StoredConfirmedBlockTransactionStatusMeta {
-            err,
-            fee,
-            pre_balances,
-            post_balances,
-        } = value;
-        let status = match &err {
-            None => Ok(()),
-            Some(err) => Err(err.clone()),
-        };
-        Self {
-            status,
-            fee,
-            pre_balances,
-            post_balances,
-            inner_instructions: None,
-            log_messages: None,
-            pre_token_balances: None,
-            post_token_balances: None,
-            rewards: None,
-        }
-    }
-}
-
-impl From<TransactionStatusMeta> for StoredConfirmedBlockTransactionStatusMeta {
-    fn from(value: TransactionStatusMeta) -> Self {
-        let TransactionStatusMeta {
-            status,
-            fee,
-            pre_balances,
-            post_balances,
-            ..
-        } = value;
-        Self {
-            err: status.err(),
-            fee,
-            pre_balances,
-            post_balances,
-        }
-    }
-}
-
-type StoredConfirmedBlockRewards = Vec<StoredConfirmedBlockReward>;
-
-#[derive(Serialize, Deserialize)]
-struct StoredConfirmedBlockReward {
-    pubkey: String,
-    lamports: i64,
-}
-
-impl From<StoredConfirmedBlockReward> for Reward {
-    fn from(value: StoredConfirmedBlockReward) -> Self {
-        let StoredConfirmedBlockReward { pubkey, lamports } = value;
-        Self {
-            pubkey,
-            lamports,
-            post_balance: 0,
-            reward_type: None,
-            commission: None,
-        }
-    }
-}
-
-impl From<Reward> for StoredConfirmedBlockReward {
-    fn from(value: Reward) -> Self {
-        let Reward {
-            pubkey, lamports, ..
-        } = value;
-        Self { pubkey, lamports }
-    }
-}
-
-// A serialized `TransactionInfo` is stored in the `tx` table
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-struct TransactionInfo {
-    slot: Slot, // The slot that contains the block with this transaction in it
-    index: u32, // Where the transaction is located in the block
-    err: Option<TransactionError>, // None if the transaction executed successfully
-    memo: Option<String>, // Transaction memo
-}
-
-// Part of a serialized `TransactionInfo` which is stored in the `tx` table
-#[derive(PartialEq, Debug)]
-struct UploadedTransaction {
-    slot: Slot, // The slot that contains the block with this transaction in it
-    index: u32, // Where the transaction is located in the block
-    err: Option<TransactionError>, // None if the transaction executed successfully
-}
-
-impl From<TransactionInfo> for UploadedTransaction {
-    fn from(transaction_info: TransactionInfo) -> Self {
-        Self {
-            slot: transaction_info.slot,
-            index: transaction_info.index,
-            err: transaction_info.err,
-        }
-    }
-}
-
-impl From<TransactionInfo> for TransactionStatus {
-    fn from(transaction_info: TransactionInfo) -> Self {
-        let TransactionInfo { slot, err, .. } = transaction_info;
-        let status = match &err {
-            None => Ok(()),
-            Some(err) => Err(err.clone()),
-        };
-        Self {
-            slot,
-            confirmations: None,
-            status,
-            err,
-            confirmation_status: Some(TransactionConfirmationStatus::Finalized),
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-struct LegacyTransactionByAddrInfo {
-    pub signature: Signature,          // The transaction signature
-    pub err: Option<TransactionError>, // None if the transaction executed successfully
-    pub index: u32,                    // Where the transaction is located in the block
-    pub memo: Option<String>,          // Transaction memo
-}
-
-impl From<LegacyTransactionByAddrInfo> for TransactionByAddrInfo {
-    fn from(legacy: LegacyTransactionByAddrInfo) -> Self {
-        let LegacyTransactionByAddrInfo {
-            signature,
-            err,
-            index,
-            memo,
-        } = legacy;
-
-        Self {
-            signature,
-            err,
-            index,
-            memo,
-            block_time: None,
-        }
+        })
     }
 }

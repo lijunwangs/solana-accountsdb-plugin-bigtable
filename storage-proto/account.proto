@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package solana.accountsdb.plugin.Account;
+package solana.geyser.plugin.Account;
 
 message account {
     bytes pubkey = 1;
