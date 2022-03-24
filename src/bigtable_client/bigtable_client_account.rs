@@ -147,7 +147,7 @@ impl SimpleBigtableClient {
             .put_protobuf_cells_with_retry::<accounts::Account>("account", &account_cells)
             .await;
         match result {
-            Ok(size) => {
+            Ok(_size) => {
                 Ok(())
             }
             Err(err) => {
