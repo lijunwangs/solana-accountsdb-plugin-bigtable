@@ -147,8 +147,13 @@ impl SimpleBigtableClient {
             .put_protobuf_cells_with_retry::<accounts::Account>("account", &account_cells)
             .await;
         match result {
-            Ok(_size) => Ok(()),
-            Err(err) => Err(AccountsDbPluginError::Custom(Box::new(err))),
+            Ok(size) => {
+                Ok(())
+            }
+            Err(err) => {
+                error!("Error persisting into the database: {}", err);
+                Err(AccountsDbPluginError::Custom(Box::new(err)))
+            }
         }
     }
 }
