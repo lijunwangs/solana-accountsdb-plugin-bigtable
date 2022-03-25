@@ -5,7 +5,7 @@
 
 set -e
 
-instance=solana-geyser-plugin-bigtable
+instance=geyser-bigtable
 
 cbt=(
   cbt
