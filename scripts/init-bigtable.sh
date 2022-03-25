@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
 #
 # Configures a BigTable instance with the expected tables
+# Usage: init-bigtable.sh [bigtable-instance-name]
+# If bigtable-instance-name is not given. It will be the default
+# solana-geyser-plugin-bigtable
 #
 
 set -e
 
-instance=geyser-bigtable
+if [ ! -n $1 ]
+then
+  instance=$1
+else
+  instance=solana-geyser-plugin-bigtable
+fi
 
 cbt=(
   cbt

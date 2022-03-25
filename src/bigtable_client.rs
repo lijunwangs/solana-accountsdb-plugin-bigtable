@@ -46,12 +46,14 @@ pub struct SimpleBigtableClient {
     client: Mutex<BigtableClientWrapper>,
 }
 
+const DEFAULT_BIGTABLE_INSTANCE: &str = "solana-geyser-plugin-bigtable";
+
 impl SimpleBigtableClient {
     pub async fn connect_to_db(
         config: &GeyserPluginBigtableConfig,
     ) -> Result<Client, GeyserPluginError> {
         let result = Client::new(
-            "solana-geyser-plugin-bigtable",
+            config.instance.as_ref().unwrap_or(&DEFAULT_BIGTABLE_INSTANCE.to_string()),
             false,
             config.timeout,
             config.credential_path.clone(),
