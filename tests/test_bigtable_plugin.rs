@@ -9,11 +9,10 @@ use serde_json::json;
 use {
     libloading::Library,
     log::*,
-    solana_geyser_plugin_bigtable::{
-        geyser_plugin_bigtable::GeyserPluginBigtableConfig,
-        bigtable_client::SimpleBigtableClient,
-    },
     solana_core::validator::ValidatorConfig,
+    solana_geyser_plugin_bigtable::{
+        bigtable_client::SimpleBigtableClient, geyser_plugin_bigtable::GeyserPluginBigtableConfig,
+    },
     solana_local_cluster::{
         cluster::Cluster,
         local_cluster::{ClusterConfig, LocalCluster},

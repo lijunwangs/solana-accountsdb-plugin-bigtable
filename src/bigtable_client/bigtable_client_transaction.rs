@@ -20,6 +20,10 @@ use {
 
 const MAX_TRANSACTION_STATUS_LEN: usize = 256;
 
+pub struct LogTransactionRequest {
+    pub transaction_info: DbTransaction,
+}
+
 #[derive(Clone, Debug)]
 pub struct DbCompiledInstruction {
     pub program_id_index: i16,
@@ -124,10 +128,6 @@ pub struct DbTransaction {
     pub message_hash: Vec<u8>,
     pub meta: DbTransactionStatusMeta,
     pub signatures: Vec<Vec<u8>>,
-}
-
-pub struct LogTransactionRequest {
-    pub transaction_info: DbTransaction,
 }
 
 impl From<&MessageAddressTableLookup> for DbTransactionMessageAddressTableLookup {
@@ -236,7 +236,9 @@ impl From<&v0::LoadedMessage<'_>> for DbLoadedMessageV0 {
     fn from(message: &v0::LoadedMessage) -> Self {
         Self {
             message: DbTransactionMessageV0::from(&message.message as &v0::Message),
-            loaded_addresses: DbLoadedAddresses::from(&message.loaded_addresses as &LoadedAddresses),
+            loaded_addresses: DbLoadedAddresses::from(
+                &message.loaded_addresses as &LoadedAddresses,
+            ),
         }
     }
 }
@@ -463,10 +465,10 @@ impl From<&TransactionError> for DbTransactionErrorCode {
             TransactionError::InvalidWritableAccount => Self::InvalidWritableAccount,
             TransactionError::WouldExceedAccountDataBlockLimit => {
                 Self::WouldExceedMaxAccountDataCostLimit
-            },
+            }
             TransactionError::WouldExceedAccountDataTotalLimit => {
                 Self::WouldExceedMaxAccountDataCostLimit
-            },
+            }
             TransactionError::TooManyAccountLocks => Self::TooManyAccountLocks,
             TransactionError::AddressLookupTableNotFound => Self::AddressLookupTableNotFound,
             TransactionError::InvalidAddressLookupTableOwner => {

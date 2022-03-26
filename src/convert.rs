@@ -39,12 +39,8 @@ pub mod tx_by_addr {
 }
 
 pub mod accounts {
-    include!(concat!(
-        env!("OUT_DIR"),
-        "/solana.geyser.plugin.account.rs"
-    ));
+    include!(concat!(env!("OUT_DIR"), "/solana.geyser.plugin.account.rs"));
 }
-
 
 impl From<Vec<Reward>> for generated::Rewards {
     fn from(rewards: Vec<Reward>) -> Self {

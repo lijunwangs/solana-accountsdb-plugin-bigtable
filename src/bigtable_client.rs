@@ -1,14 +1,12 @@
-mod bigtable_client_account;
-mod bigtable_client_account_index;
-mod bigtable_client_block_metadata;
-mod bigtable_client_transaction;
+pub mod bigtable_client_account;
+pub mod bigtable_client_account_index;
+pub mod bigtable_client_block_metadata;
+pub mod bigtable_client_transaction;
 
 use {
     crate::{
-        geyser_plugin_bigtable::{
-            GeyserPluginBigtableConfig, GeyserPluginBigtableError,
-        },
         bigtable::BigTableConnection as Client,
+        geyser_plugin_bigtable::{GeyserPluginBigtableConfig, GeyserPluginBigtableError},
     },
     log::*,
     solana_geyser_plugin_interface::geyser_plugin_interface::GeyserPluginError,
@@ -18,9 +16,9 @@ use {
 
 /// The maximum asynchronous requests allowed in the channel to avoid excessive
 /// memory usage. The downside -- calls after this threshold is reached can get blocked.
-const DEFAULT_THREADS_COUNT: usize = 100;
-const DEFAULT_PANIC_ON_DB_ERROR: bool = false;
-const DEFAULT_STORE_ACCOUNT_HISTORICAL_DATA: bool = false;
+pub const DEFAULT_THREADS_COUNT: usize = 100;
+pub const DEFAULT_PANIC_ON_DB_ERROR: bool = false;
+pub const DEFAULT_STORE_ACCOUNT_HISTORICAL_DATA: bool = false;
 
 pub(crate) fn abort() -> ! {
     #[cfg(not(test))]
@@ -46,14 +44,18 @@ pub struct SimpleBigtableClient {
     client: Mutex<BigtableClientWrapper>,
 }
 
-const DEFAULT_BIGTABLE_INSTANCE: &str = "solana-geyser-plugin-bigtable";
+/// The default bigtable instance name
+pub const DEFAULT_BIGTABLE_INSTANCE: &str = "solana-geyser-plugin-bigtable";
 
 impl SimpleBigtableClient {
     pub async fn connect_to_db(
         config: &GeyserPluginBigtableConfig,
     ) -> Result<Client, GeyserPluginError> {
         let result = Client::new(
-            config.instance.as_ref().unwrap_or(&DEFAULT_BIGTABLE_INSTANCE.to_string()),
+            config
+                .instance
+                .as_ref()
+                .unwrap_or(&DEFAULT_BIGTABLE_INSTANCE.to_string()),
             false,
             config.timeout,
             config.credential_path.clone(),
@@ -74,9 +76,7 @@ impl SimpleBigtableClient {
         }
     }
 
-    pub async fn new(
-        config: &GeyserPluginBigtableConfig,
-    ) -> Result<Self, GeyserPluginError> {
+    pub async fn new(config: &GeyserPluginBigtableConfig) -> Result<Self, GeyserPluginError> {
         info!("Creating SimpleBigtableClient...");
         let client = Self::connect_to_db(config).await?;
 

@@ -29,8 +29,13 @@ pub struct DbAccountInfo {
     pub write_version: i64,
 }
 
+pub struct UpdateAccountRequest {
+    pub account: DbAccountInfo,
+    pub is_startup: bool,
+}
+
 impl DbAccountInfo {
-    fn new<T: ReadableAccountInfo>(account: &T, slot: u64) -> DbAccountInfo {
+    pub fn new<T: ReadableAccountInfo>(account: &T, slot: u64) -> DbAccountInfo {
         let data = account.data().to_vec();
         Self {
             pubkey: account.pubkey().to_vec(),
@@ -147,9 +152,7 @@ impl SimpleBigtableClient {
             .put_protobuf_cells_with_retry::<accounts::Account>("account", &account_cells)
             .await;
         match result {
-            Ok(_size) => {
-                Ok(())
-            }
+            Ok(_size) => Ok(()),
             Err(err) => {
                 error!("Error persisting into the database: {}", err);
                 Err(GeyserPluginError::Custom(Box::new(err)))
