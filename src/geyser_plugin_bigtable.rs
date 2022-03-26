@@ -1,7 +1,7 @@
 /// Main entry for the Bigtable plugin
 use {
     crate::{
-        accounts_selector::AccountsSelector, bigtable_client::AsyncBigtableClient,
+        accounts_selector::AccountsSelector, parallel_bigtable_client::ParallelBigtableClient,
         transaction_selector::TransactionSelector,
     },
     bs58,
@@ -20,7 +20,7 @@ use {
 
 #[derive(Default)]
 pub struct GeyserPluginBigtable {
-    client: Option<AsyncBigtableClient>,
+    client: Option<ParallelBigtableClient>,
     accounts_selector: Option<AccountsSelector>,
     transaction_selector: Option<TransactionSelector>,
 }
@@ -191,7 +191,7 @@ impl GeyserPlugin for GeyserPluginBigtable {
                 })
             }
             Ok(config) => {
-                let client = AsyncBigtableClient::new(&config)?;
+                let client = ParallelBigtableClient::new(&config)?;
                 self.client = Some(client);
             }
         }

@@ -370,7 +370,7 @@ impl From<&TransactionStatusMeta> for DbTransactionStatusMeta {
     }
 }
 
-fn build_db_transaction(slot: u64, transaction_info: &ReplicaTransactionInfo) -> DbTransaction {
+pub fn build_db_transaction(slot: u64, transaction_info: &ReplicaTransactionInfo) -> DbTransaction {
     DbTransaction {
         signature: transaction_info.signature.as_ref().to_vec(),
         is_vote: transaction_info.is_vote,

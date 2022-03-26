@@ -11,15 +11,15 @@ use {
             bigtable_client_account::{DbAccountInfo, ReadableAccountInfo, UpdateAccountRequest},
             bigtable_client_account_index::TokenSecondaryIndexEntry,
             bigtable_client_block_metadata::{DbBlockInfo, UpdateBlockMetadataRequest},
-            bigtable_client_transaction::LogTransactionRequest,
-            SimpleBigtableClient, DEFAULT_BIGTABLE_INSTANCE, DEFAULT_STORE_ACCOUNT_HISTORICAL_DATA,
+            bigtable_client_transaction::{build_db_transaction, LogTransactionRequest},
+            DEFAULT_BIGTABLE_INSTANCE, DEFAULT_STORE_ACCOUNT_HISTORICAL_DATA,
         },
         geyser_plugin_bigtable::{GeyserPluginBigtableConfig, GeyserPluginBigtableError},
     },
     crossbeam_channel::{bounded, Receiver, RecvTimeoutError, Sender},
     log::*,
     solana_geyser_plugin_interface::geyser_plugin_interface::{
-        GeyserPluginError, ReplicaAccountInfo, ReplicaBlockInfo, SlotStatus,
+        GeyserPluginError, ReplicaAccountInfo, ReplicaBlockInfo, ReplicaTransactionInfo, SlotStatus,
     },
     solana_measure::measure::Measure,
     solana_metrics::*,
@@ -163,8 +163,8 @@ impl BigtableClientWorker {
     }
 
     fn update_account(
-        &self,
-        account: &DbAccountInfo,
+        &mut self,
+        account: DbAccountInfo,
         is_startup: bool,
     ) -> Result<(), GeyserPluginError> {
         self.runtime
@@ -220,8 +220,7 @@ impl BigtableClientWorker {
             match work {
                 Ok(work) => match work {
                     DbWorkItem::UpdateAccount(request) => {
-                        if let Err(err) = self.update_account(&request.account, request.is_startup)
-                        {
+                        if let Err(err) = self.update_account(request.account, request.is_startup) {
                             error!("Failed to update account: ({})", err);
                             if panic_on_db_errors {
                                 abort();
@@ -488,6 +487,33 @@ impl ParallelBigtableClient {
         }
 
         info!("Done with notifying the end of startup");
+        Ok(())
+    }
+
+    fn build_transaction_request(
+        slot: u64,
+        transaction_info: &ReplicaTransactionInfo,
+    ) -> LogTransactionRequest {
+        LogTransactionRequest {
+            transaction_info: build_db_transaction(slot, transaction_info),
+        }
+    }
+
+    pub fn log_transaction_info(
+        &mut self,
+        transaction_info: &ReplicaTransactionInfo,
+        slot: u64,
+    ) -> Result<(), GeyserPluginError> {
+        let wrk_item = DbWorkItem::LogTransaction(Box::new(Self::build_transaction_request(
+            slot,
+            transaction_info,
+        )));
+
+        if let Err(err) = self.sender.send(wrk_item) {
+            return Err(GeyserPluginError::SlotStatusUpdateError {
+                msg: format!("Failed to update the transaction, error: {:?}", err),
+            });
+        }
         Ok(())
     }
 }

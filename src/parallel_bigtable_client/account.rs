@@ -17,15 +17,34 @@ use {
 impl BufferedBigtableClient {
     /// Update or insert a single account
     pub async fn update_account(
-        &self,
-        account: &DbAccountInfo,
+        &mut self,
+        account: DbAccountInfo,
         is_startup: bool,
     ) -> Result<(), GeyserPluginError> {
+        let account_cells = if is_startup {
+            self.pending_account_updates.push(account);
+
+            if self.pending_account_updates.len() == self.batch_size {
+                self.pending_account_updates
+                    .drain(..)
+                    .map(|account| {
+                        (
+                            Pubkey::new(account.pubkey()).to_string(),
+                            accounts::Account::from(&account),
+                        )
+                    })
+                    .collect()
+            } else {
+                return Ok(());
+            }
+        } else {
+            vec![(
+                Pubkey::new(account.pubkey()).to_string(),
+                accounts::Account::from(&account),
+            )]
+        };
+
         let client = self.client.lock().unwrap();
-        let account_cells = [(
-            Pubkey::new(account.pubkey()).to_string(),
-            accounts::Account::from(account),
-        )];
         let result = client
             .client
             .put_protobuf_cells_with_retry::<accounts::Account>("account", &account_cells)
