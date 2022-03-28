@@ -109,8 +109,28 @@ fn generate_geyser_plugin_config() -> (TempDir, PathBuf) {
     path.push("accounts_db_plugin.json");
     let mut config_file = File::create(path.clone()).unwrap();
 
-    let mut config_content = json!({
-        "libpath": "libsolana_geyser_plugin_bigtable.so",
+    // Need to specify the absolute path of the dynamic library
+    // as the framework is looking for the library relative to the
+    // config file otherwise.
+    let lib_name = if std::env::consts::OS == "macos" {
+        "libsolana_geyser_plugin_bigtable.dylib"
+    } else {
+        "libsolana_geyser_plugin_bigtable.so"
+    };
+
+    let mut lib_path = path.clone();
+
+    lib_path.pop();
+    lib_path.pop();
+    lib_path.pop();
+    lib_path.push("target");
+    lib_path.push("debug");
+    lib_path.push(lib_name);
+
+    let lib_path = lib_path.as_os_str().to_str().unwrap();
+
+    let config_content = json!({
+        "libpath": lib_path,
         "threads": 20,
         "batch_size": 20,
         "panic_on_db_errors": true,
@@ -121,10 +141,6 @@ fn generate_geyser_plugin_config() -> (TempDir, PathBuf) {
             "mentions" : ["*"]
         }
     });
-
-    if std::env::consts::OS == "macos" {
-        config_content["libpath"] = json!("libsolana_geyser_plugin_bigtable.dylib");
-    }
 
     write!(config_file, "{}", config_content.to_string()).unwrap();
     (tmp_dir, path)
