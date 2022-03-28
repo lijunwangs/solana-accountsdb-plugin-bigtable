@@ -50,7 +50,11 @@ impl BufferedBigtableClient {
             Err(err) => {
                 error!("Error persisting into the database: {}", err);
                 for (key, account) in account_cells.iter() {
-                    error!("Error persisting into the database: pubkey {}, len: {} ", key, account.data.len());
+                    error!(
+                        "Error persisting into the database: pubkey {}, len: {} ",
+                        key,
+                        account.data.len()
+                    );
                 }
                 Err(GeyserPluginError::Custom(Box::new(err)))
             }

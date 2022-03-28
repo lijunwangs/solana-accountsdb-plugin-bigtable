@@ -718,7 +718,19 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
             new_row_data.push((row_key, vec![("proto".to_string(), data)]));
         }
 
-        self.put_row_data(table, "x", &new_row_data).await?;
+        let result = self.put_row_data(table, "x", &new_row_data).await;
+        match result {
+            Err(err) => {
+                for (key, data) in new_row_data.iter() {
+                    for (col, cell) in data.iter() {
+                        error!("Error writing account key {} len: {}", *key, cell.len());
+                    }
+                }
+
+                return Err(err);
+            }
+            Ok(_) => {}
+        }
         Ok(bytes_written)
     }
 }
