@@ -3,30 +3,26 @@ use {
         bigtable_client::{AsyncBigtableClient, SimpleBigtableClient},
         convert::accounts,
     },
-    chrono::Utc,
     log::*,
     solana_geyser_plugin_interface::geyser_plugin_interface::{
         GeyserPluginError, ReplicaAccountInfo,
     },
-    solana_measure::measure::Measure,
-    solana_metrics::*,
     solana_sdk::pubkey::Pubkey,
+    std::time::SystemTime,
 };
-
-const ACCOUNT_COLUMN_COUNT: usize = 9;
 
 impl Eq for DbAccountInfo {}
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct DbAccountInfo {
     pub pubkey: Vec<u8>,
-    pub lamports: i64,
+    pub lamports: u64,
     pub owner: Vec<u8>,
     pub executable: bool,
-    pub rent_epoch: i64,
+    pub rent_epoch: u64,
     pub data: Vec<u8>,
-    pub slot: i64,
-    pub write_version: i64,
+    pub slot: u64,
+    pub write_version: u64,
 }
 
 pub struct UpdateAccountRequest {
@@ -39,12 +35,12 @@ impl DbAccountInfo {
         let data = account.data().to_vec();
         Self {
             pubkey: account.pubkey().to_vec(),
-            lamports: account.lamports() as i64,
+            lamports: account.lamports(),
             owner: account.owner().to_vec(),
             executable: account.executable(),
-            rent_epoch: account.rent_epoch() as i64,
+            rent_epoch: account.rent_epoch(),
             data,
-            slot: slot as i64,
+            slot,
             write_version: account.write_version(),
         }
     }
@@ -59,7 +55,7 @@ impl ReadableAccountInfo for DbAccountInfo {
         &self.owner
     }
 
-    fn lamports(&self) -> i64 {
+    fn lamports(&self) -> u64 {
         self.lamports
     }
 
@@ -67,7 +63,7 @@ impl ReadableAccountInfo for DbAccountInfo {
         self.executable
     }
 
-    fn rent_epoch(&self) -> i64 {
+    fn rent_epoch(&self) -> u64 {
         self.rent_epoch
     }
 
@@ -75,7 +71,7 @@ impl ReadableAccountInfo for DbAccountInfo {
         &self.data
     }
 
-    fn write_version(&self) -> i64 {
+    fn write_version(&self) -> u64 {
         self.write_version
     }
 }
@@ -89,35 +85,35 @@ impl<'a> ReadableAccountInfo for ReplicaAccountInfo<'a> {
         self.owner
     }
 
-    fn lamports(&self) -> i64 {
-        self.lamports as i64
+    fn lamports(&self) -> u64 {
+        self.lamports
     }
 
     fn executable(&self) -> bool {
         self.executable
     }
 
-    fn rent_epoch(&self) -> i64 {
-        self.rent_epoch as i64
+    fn rent_epoch(&self) -> u64 {
+        self.rent_epoch
     }
 
     fn data(&self) -> &[u8] {
         self.data
     }
 
-    fn write_version(&self) -> i64 {
-        self.write_version as i64
+    fn write_version(&self) -> u64 {
+        self.write_version
     }
 }
 
 pub trait ReadableAccountInfo: Sized {
     fn pubkey(&self) -> &[u8];
     fn owner(&self) -> &[u8];
-    fn lamports(&self) -> i64;
+    fn lamports(&self) -> u64;
     fn executable(&self) -> bool;
-    fn rent_epoch(&self) -> i64;
+    fn rent_epoch(&self) -> u64;
     fn data(&self) -> &[u8];
-    fn write_version(&self) -> i64;
+    fn write_version(&self) -> u64;
 }
 
 impl From<&DbAccountInfo> for accounts::Account {
@@ -131,7 +127,9 @@ impl From<&DbAccountInfo> for accounts::Account {
             rent_epoch: account.rent_epoch() as u64,
             data: account.data().to_vec(),
             write_version: account.write_version as u64,
-            updated_on: Some(accounts::UnixTimestamp { timestamp: 12345 }),
+            updated_on: Some(accounts::UnixTimestamp {
+                timestamp: SystemTime::now().elapsed().unwrap().as_secs() as i64,
+            }),
         }
     }
 }

@@ -42,6 +42,10 @@ pub mod accounts {
     include!(concat!(env!("OUT_DIR"), "/solana.geyser.plugin.account.rs"));
 }
 
+pub mod slots {
+    include!(concat!(env!("OUT_DIR"), "/solana.geyser.plugin.slot.rs"));
+}
+
 impl From<Vec<Reward>> for generated::Rewards {
     fn from(rewards: Vec<Reward>) -> Self {
         Self {

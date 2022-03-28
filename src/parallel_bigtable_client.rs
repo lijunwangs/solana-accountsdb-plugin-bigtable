@@ -1,6 +1,7 @@
 pub mod account;
 pub mod account_index;
 pub mod block_metadata;
+pub mod slot;
 pub mod transaction;
 
 use {
@@ -178,7 +179,8 @@ impl BigtableClientWorker {
         status: SlotStatus,
     ) -> Result<(), GeyserPluginError> {
         info!("Updating slot {:?} at with status {:?}", slot, status);
-        Ok(())
+        self.runtime
+            .block_on(self.client.update_slot(slot, parent, status.as_str()))
     }
 
     fn notify_end_of_startup(&mut self) -> Result<(), GeyserPluginError> {

@@ -4,7 +4,7 @@ package solana.geyser.plugin.Slot;
 
 message slot {
     uint64 slot = 1;
-    uint64 parent = 4;
+    optional uint64 parent = 4;
     string status = 5;
     UnixTimestamp updated_on = 9;
 }

@@ -4,13 +4,8 @@ use {
         convert::accounts,
         parallel_bigtable_client::BufferedBigtableClient,
     },
-    chrono::Utc,
     log::*,
-    solana_geyser_plugin_interface::geyser_plugin_interface::{
-        GeyserPluginError, ReplicaAccountInfo,
-    },
-    solana_measure::measure::Measure,
-    solana_metrics::*,
+    solana_geyser_plugin_interface::geyser_plugin_interface::GeyserPluginError,
     solana_sdk::pubkey::Pubkey,
 };
 
@@ -22,6 +17,7 @@ impl BufferedBigtableClient {
         is_startup: bool,
     ) -> Result<(), GeyserPluginError> {
         let account_cells = if is_startup {
+            self.slots_at_startup.insert(account.slot);
             self.pending_account_updates.push(account);
 
             if self.pending_account_updates.len() == self.batch_size {

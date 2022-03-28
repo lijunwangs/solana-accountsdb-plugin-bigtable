@@ -5,11 +5,7 @@ use {
         StringAmount,
     },
     solana_sdk::{
-        clock::{Slot, UnixTimestamp},
-        deserialize_utils::default_on_eof,
-        message::v0::LoadedAddresses,
-        signature::Signature,
-        transaction::{Result, Transaction, TransactionError},
+        deserialize_utils::default_on_eof, message::v0::LoadedAddresses, transaction::Result,
     },
     solana_transaction_status::{
         InnerInstructions, Reward, RewardType, TransactionStatusMeta, TransactionTokenBalance,
