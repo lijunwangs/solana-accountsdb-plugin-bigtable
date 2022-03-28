@@ -3,6 +3,7 @@ fn main() -> Result<(), std::io::Error> {
     let proto_files = [
         "account.proto",
         "confirmed_block.proto",
+        "slot.proto",
         "transaction_by_addr.proto",
     ];
     let mut protos = Vec::new();
