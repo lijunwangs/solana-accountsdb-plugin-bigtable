@@ -16,7 +16,7 @@ impl BufferedBigtableClient {
         account: DbAccountInfo,
         is_startup: bool,
     ) -> Result<(), GeyserPluginError> {
-        let account_cells = if is_startup {
+        let account_cells = {
             self.slots_at_startup.insert(account.slot);
             self.pending_account_updates.push(account);
 
@@ -29,16 +29,18 @@ impl BufferedBigtableClient {
                             accounts::Account::from(&account),
                         )
                     })
-                    .collect()
+                    .collect::<Vec<(String, accounts::Account)>>()
             } else {
                 return Ok(());
             }
-        } else {
-            vec![(
-                Pubkey::new(account.pubkey()).to_string(),
-                accounts::Account::from(&account),
-            )]
         };
+
+        // } else {
+        //     vec![(
+        //         Pubkey::new(account.pubkey()).to_string(),
+        //         accounts::Account::from(&account),
+        //     )]
+        // };
 
         let client = self.client.lock().unwrap();
         let result = client
