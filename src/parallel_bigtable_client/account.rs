@@ -43,18 +43,14 @@ impl BufferedBigtableClient {
         let client = self.client.lock().unwrap();
         let result = client
             .client
-            .put_protobuf_cells_with_retry::<accounts::Account>("account", &account_cells)
+            .put_protobuf_cells_with_retry::<accounts::Account>("account", &account_cells, true)
             .await;
         match result {
             Ok(_size) => Ok(()),
             Err(err) => {
                 error!("Error persisting into the database: {}", err);
                 for (key, account) in account_cells.iter() {
-                    error!(
-                        "Error persisting into the database: pubkey {}, len: {} ",
-                        key,
-                        account.data.len()
-                    );
+                    error!("Error persisting into the database: pubkey: {}, len: {} ", key, account.data.len());
                 }
                 Err(GeyserPluginError::Custom(Box::new(err)))
             }

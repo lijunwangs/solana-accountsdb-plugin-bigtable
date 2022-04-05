@@ -1,7 +1,7 @@
 #![allow(clippy::integer_arithmetic)]
 
 /// For integration tests locally, use the Google Bigtable Emulator.
-/// See this project's README.md
+/// See this project's README.md on testing in Development Environment.
 
 use {
     log::*,
@@ -69,7 +69,7 @@ async fn test_bigtable_connection() {
     account_cells.push((pubkey.to_string(), account));
 
     let result = conn
-        .put_protobuf_cells_with_retry::<accounts::Account>("account", &account_cells)
+        .put_protobuf_cells_with_retry::<accounts::Account>("account", &account_cells, true)
         .await;
     assert!(result.is_ok());
     info!("Written length {}", result.unwrap());

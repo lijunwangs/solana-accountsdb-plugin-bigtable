@@ -222,13 +222,14 @@ impl BigTableConnection {
         &self,
         table: &str,
         cells: &[(RowKey, T)],
+        overwrite: bool,
     ) -> Result<usize>
     where
         T: serde::ser::Serialize,
     {
         retry(ExponentialBackoff::default(), || async {
             let mut client = self.client();
-            Ok(client.put_bincode_cells(table, cells).await?)
+            Ok(client.put_bincode_cells(table, cells, overwrite).await?)
         })
         .await
     }
@@ -260,13 +261,14 @@ impl BigTableConnection {
         &self,
         table: &str,
         cells: &[(RowKey, T)],
+        overwrite: bool,
     ) -> Result<usize>
     where
         T: prost::Message,
     {
         retry(ExponentialBackoff::default(), || async {
             let mut client = self.client();
-            Ok(client.put_protobuf_cells(table, cells).await?)
+            Ok(client.put_protobuf_cells(table, cells, overwrite).await?)
         })
         .await
     }
@@ -589,10 +591,21 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
         table_name: &str,
         family_name: &str,
         row_data: &[(&RowKey, RowData)],
+        overwrite: bool
     ) -> Result<()> {
         self.refresh_access_token().await;
 
         let mut entries = vec![];
+        let timestamp = if overwrite {
+            // overwriting existing cell
+            // https://cloud.google.com/bigtable/docs/gc-latest-value
+            0
+        } else
+        {
+            // server assigned
+            -1
+        };
+
         for (row_key, row_data) in row_data {
             let mutations = row_data
                 .iter()
@@ -600,7 +613,7 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
                     mutation: Some(mutation::Mutation::SetCell(mutation::SetCell {
                         family_name: family_name.to_string(),
                         column_qualifier: column_key.clone().into_bytes(),
-                        timestamp_micros: -1, // server assigned
+                        timestamp_micros: timestamp,
                         value: column_value.to_vec(),
                     })),
                 })
@@ -684,6 +697,7 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
         &mut self,
         table: &str,
         cells: &[(RowKey, T)],
+        overwrite: bool,
     ) -> Result<usize>
     where
         T: serde::ser::Serialize,
@@ -696,7 +710,7 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
             new_row_data.push((row_key, vec![("bin".to_string(), data)]));
         }
 
-        self.put_row_data(table, "x", &new_row_data).await?;
+        self.put_row_data(table, "x", &new_row_data, overwrite).await?;
         Ok(bytes_written)
     }
 
@@ -704,6 +718,7 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
         &mut self,
         table: &str,
         cells: &[(RowKey, T)],
+        overwrite: bool,
     ) -> Result<usize>
     where
         T: prost::Message,
@@ -718,12 +733,12 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
             new_row_data.push((row_key, vec![("proto".to_string(), data)]));
         }
 
-        let result = self.put_row_data(table, "x", &new_row_data).await;
+        let result = self.put_row_data(table, "x", &new_row_data, overwrite).await;
         match result {
             Err(err) => {
                 for (key, data) in new_row_data.iter() {
                     for (col, cell) in data.iter() {
-                        error!("Error writing account key {} len: {}", *key, cell.len());
+                        error!("Error writing account key {} col {} len: {}", *key, col, cell.len());
                     }
                 }
 

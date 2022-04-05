@@ -28,7 +28,7 @@ impl BufferedBigtableClient {
         let client = self.client.lock().unwrap();
         let result = client
             .client
-            .put_protobuf_cells_with_retry::<slots::Slot>("slot", &slot_cells)
+            .put_protobuf_cells_with_retry::<slots::Slot>("slot", &slot_cells, true)
             .await;
         match result {
             Ok(_size) => Ok(()),

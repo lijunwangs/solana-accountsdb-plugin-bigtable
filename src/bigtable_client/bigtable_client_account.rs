@@ -147,7 +147,7 @@ impl SimpleBigtableClient {
         )];
         let result = client
             .client
-            .put_protobuf_cells_with_retry::<accounts::Account>("account", &account_cells)
+            .put_protobuf_cells_with_retry::<accounts::Account>("account", &account_cells, true)
             .await;
         match result {
             Ok(_size) => Ok(()),
