@@ -18,6 +18,32 @@ use {
 const RUST_LOG_FILTER: &str =
     "info,solana_core::replay_stage=warn,solana_local_cluster=info,local_cluster=info";
 
+fn create_account(data_len: usize) -> (Pubkey, accounts::Account) {
+    let mut data = vec![0; data_len];
+
+    for i in 0..data.len() {
+        data[i] = rand::random();
+    }
+
+    let pubkey = Pubkey::new_unique();
+    (
+        pubkey,
+        accounts::Account {
+            pubkey: pubkey.to_bytes().to_vec(),
+            lamports: 1234,
+            owner: Pubkey::new_unique().to_bytes().to_vec(),
+            data,
+            slot: 12345,
+            executable: false,
+            rent_epoch: 0,
+            write_version: 1,
+            updated_on: Some(accounts::UnixTimestamp {
+                timestamp: SystemTime::now().elapsed().unwrap().as_secs() as i64,
+            })
+        }
+    )
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 1)]
 async fn test_bigtable_connection() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
@@ -32,27 +58,16 @@ async fn test_bigtable_connection() {
     let conn = result.unwrap();
     info!("Connected to Bigtable!");
     
-    let mut data = vec![0; 1024];
+    let mut account_cells = Vec::default();
 
-    for i in 0..data.len() {
-        data[i] = rand::random();
+    for _ in 0..20 {
+        let (pubkey, account) = create_account(256);
+        account_cells.push((pubkey.to_string(), account));
     }
 
-    let pubkey = Pubkey::new_unique();
-    let account = accounts::Account {
-        pubkey: pubkey.to_bytes().to_vec(),
-        lamports: 1234,
-        owner: Pubkey::new_unique().to_bytes().to_vec(),
-        data,
-        slot: 12345,
-        executable: false,
-        rent_epoch: 0,
-        write_version: 1,
-        updated_on: Some(accounts::UnixTimestamp {
-            timestamp: SystemTime::now().elapsed().unwrap().as_secs() as i64,
-        })
-    };
-    let account_cells = [(pubkey.to_string(), account)];
+    let (pubkey, account) = create_account(1024*1024);
+    account_cells.push((pubkey.to_string(), account));
+
     let result = conn
         .put_protobuf_cells_with_retry::<accounts::Account>("account", &account_cells)
         .await;
