@@ -138,16 +138,7 @@ struct BigtableClientWorker {
 }
 
 impl BigtableClientWorker {
-    fn new(config: GeyserPluginBigtableConfig) -> Result<Self, GeyserPluginError> {
-        let thread_per_runtime = 2;
-        let runtime = Arc::new(
-            tokio::runtime::Builder::new_multi_thread()
-                .worker_threads(config.threads.unwrap_or(thread_per_runtime))
-                .thread_name("sol-acountsdb-plugin-bigtable")
-                .enable_all()
-                .build()
-                .expect("Runtime"),
-        );
+    fn new(config: GeyserPluginBigtableConfig, runtime: Arc<Runtime>) -> Result<Self, GeyserPluginError> {
 
         let result = runtime.block_on(BufferedBigtableClient::new(&config));
         match result {
@@ -307,6 +298,16 @@ impl ParallelBigtableClient {
         let startup_done_count = Arc::new(AtomicUsize::new(0));
         let worker_count = config.threads.unwrap_or(DEFAULT_THREADS_COUNT);
         let initialized_worker_count = Arc::new(AtomicUsize::new(0));
+        let thread_per_runtime = 2;
+        let runtime = Arc::new(
+            tokio::runtime::Builder::new_multi_thread()
+                .worker_threads(config.threads.unwrap_or(thread_per_runtime))
+                .thread_name("sol-acountsdb-plugin-bigtable")
+                .enable_all()
+                .build()
+                .expect("Runtime"),
+        );
+
         for i in 0..worker_count {
             let cloned_receiver = receiver.clone();
             let exit_clone = exit_worker.clone();
@@ -314,6 +315,7 @@ impl ParallelBigtableClient {
             let startup_done_count_clone = startup_done_count.clone();
             let initialized_worker_count_clone = initialized_worker_count.clone();
             let config = config.clone();
+            let runtime = runtime.clone();
             let worker = Builder::new()
                 .name(format!("worker-{}", i))
                 .spawn(move || -> Result<(), GeyserPluginError> {
@@ -321,7 +323,7 @@ impl ParallelBigtableClient {
                         .panic_on_db_errors
                         .as_ref()
                         .unwrap_or(&DEFAULT_PANIC_ON_DB_ERROR);
-                    let result = BigtableClientWorker::new(config);
+                    let result = BigtableClientWorker::new(config, runtime);
 
                     match result {
                         Ok(mut worker) => {
