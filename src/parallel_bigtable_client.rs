@@ -37,6 +37,8 @@ use {
     tokio::runtime::Runtime,
 };
 
+#[allow(unused_variables)]
+
 /// The maximum asynchronous requests allowed in the channel to avoid excessive
 /// memory usage. The downside -- calls after this threshold is reached can get blocked.
 const MAX_ASYNC_REQUESTS: usize = 40960;
@@ -61,7 +63,7 @@ enum DbWorkItem {
 struct BigtableClientWrapper {
     client: Client,
 }
-
+#[allow(dead_code)]
 pub struct BufferedBigtableClient {
     client: Mutex<BigtableClientWrapper>,
     store_account_historical_data: bool,
@@ -138,8 +140,10 @@ struct BigtableClientWorker {
 }
 
 impl BigtableClientWorker {
-    fn new(config: GeyserPluginBigtableConfig, runtime: Arc<Runtime>) -> Result<Self, GeyserPluginError> {
-
+    fn new(
+        config: GeyserPluginBigtableConfig,
+        runtime: Arc<Runtime>,
+    ) -> Result<Self, GeyserPluginError> {
         let result = runtime.block_on(BufferedBigtableClient::new(&config));
         match result {
             Ok(client) => Ok(BigtableClientWorker {
@@ -178,6 +182,7 @@ impl BigtableClientWorker {
         Ok(())
     }
 
+    #[allow(unused_variables)]
     fn log_transaction(
         &mut self,
         transaction_log_info: LogTransactionRequest,
@@ -185,6 +190,7 @@ impl BigtableClientWorker {
         Ok(())
     }
 
+    #[allow(unused_variables)]
     fn update_block_metadata(
         &mut self,
         block_info: UpdateBlockMetadataRequest,

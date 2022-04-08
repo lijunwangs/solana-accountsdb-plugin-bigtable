@@ -1,9 +1,7 @@
 use {
-    crate::bigtable_client::{
-        bigtable_client_transaction::DbReward, AsyncBigtableClient, SimpleBigtableClient,
-    },
+    crate::bigtable_client::{bigtable_client_transaction::DbReward, AsyncBigtableClient},
     solana_geyser_plugin_interface::geyser_plugin_interface::{
-        GeyserPluginError, ReplicaBlockInfo, SlotStatus,
+        GeyserPluginError, ReplicaBlockInfo,
     },
 };
 
@@ -34,25 +32,8 @@ pub struct UpdateBlockMetadataRequest {
     pub block_info: DbBlockInfo,
 }
 
-impl SimpleBigtableClient {
-    pub(crate) fn update_block_metadata_impl(
-        &mut self,
-        block_info: UpdateBlockMetadataRequest,
-    ) -> Result<(), GeyserPluginError> {
-        Ok(())
-    }
-}
-
 impl AsyncBigtableClient {
-    pub fn update_slot_status(
-        &mut self,
-        slot: u64,
-        parent: Option<u64>,
-        status: SlotStatus,
-    ) -> Result<(), GeyserPluginError> {
-        Ok(())
-    }
-
+    #[allow(unused_variables)]
     pub fn update_block_metadata(
         &mut self,
         block_info: &ReplicaBlockInfo,

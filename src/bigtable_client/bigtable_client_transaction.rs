@@ -1,6 +1,5 @@
 use {
-    crate::bigtable_client::{AsyncBigtableClient, SimpleBigtableClient},
-    chrono::Utc,
+    crate::bigtable_client::AsyncBigtableClient,
     solana_geyser_plugin_interface::geyser_plugin_interface::{
         GeyserPluginError, ReplicaTransactionInfo,
     },
@@ -484,23 +483,9 @@ impl From<&TransactionError> for DbTransactionErrorCode {
     }
 }
 
-impl SimpleBigtableClient {
-    pub(crate) fn log_transaction_impl(
-        &mut self,
-        transaction_log_info: LogTransactionRequest,
-    ) -> Result<(), GeyserPluginError> {
-        let client = self.client.get_mut().unwrap();
-        let client = &mut client.client;
-        let updated_on = Utc::now().naive_utc();
-
-        let transaction_info = transaction_log_info.transaction_info;
-
-        Ok(())
-    }
-}
-
 impl AsyncBigtableClient {
-    fn build_transaction_request(
+    #[allow(unused_variables)]
+    pub fn build_transaction_request(
         slot: u64,
         transaction_info: &ReplicaTransactionInfo,
     ) -> LogTransactionRequest {
@@ -509,6 +494,7 @@ impl AsyncBigtableClient {
         }
     }
 
+    #[allow(unused_variables)]
     pub fn log_transaction_info(
         &mut self,
         transaction_info: &ReplicaTransactionInfo,

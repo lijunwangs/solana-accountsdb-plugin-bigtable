@@ -2,17 +2,11 @@
 
 /// For integration tests locally, use the Google Bigtable Emulator.
 /// See this project's README.md on testing in Development Environment.
-
 use {
     log::*,
-    solana_geyser_plugin_bigtable::{
-        bigtable::BigTableConnection,
-        convert::accounts,
-    },
+    solana_geyser_plugin_bigtable::{bigtable::BigTableConnection, convert::accounts},
     solana_sdk::pubkey::Pubkey,
-    std::{
-        time::{SystemTime},
-    },
+    std::time::SystemTime,
 };
 
 const RUST_LOG_FILTER: &str =
@@ -39,8 +33,8 @@ fn create_account(data_len: usize) -> (Pubkey, accounts::Account) {
             write_version: 1,
             updated_on: Some(accounts::UnixTimestamp {
                 timestamp: SystemTime::now().elapsed().unwrap().as_secs() as i64,
-            })
-        }
+            }),
+        },
     )
 }
 
@@ -57,7 +51,7 @@ async fn test_bigtable_connection() {
 
     let conn = result.unwrap();
     info!("Connected to Bigtable!");
-    
+
     let mut account_cells = Vec::default();
 
     for _ in 0..20 {
@@ -65,7 +59,7 @@ async fn test_bigtable_connection() {
         account_cells.push((pubkey.to_string(), account));
     }
 
-    let (pubkey, account) = create_account(1024*1024);
+    let (pubkey, account) = create_account(1024 * 1024);
     account_cells.push((pubkey.to_string(), account));
 
     let result = conn

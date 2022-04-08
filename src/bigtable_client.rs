@@ -37,6 +37,7 @@ struct BigtableClientWrapper {
     client: Client,
 }
 
+#[allow(dead_code)]
 pub struct SimpleBigtableClient {
     index_token_owner: bool,
     index_token_mint: bool,

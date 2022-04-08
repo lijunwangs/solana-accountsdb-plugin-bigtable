@@ -591,7 +591,7 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
         table_name: &str,
         family_name: &str,
         row_data: &[(&RowKey, RowData)],
-        overwrite: bool
+        overwrite: bool,
     ) -> Result<()> {
         self.refresh_access_token().await;
 
@@ -600,8 +600,7 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
             // overwriting existing cell
             // https://cloud.google.com/bigtable/docs/gc-latest-value
             0
-        } else
-        {
+        } else {
             // server assigned
             -1
         };
@@ -710,7 +709,8 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
             new_row_data.push((row_key, vec![("bin".to_string(), data)]));
         }
 
-        self.put_row_data(table, "x", &new_row_data, overwrite).await?;
+        self.put_row_data(table, "x", &new_row_data, overwrite)
+            .await?;
         Ok(bytes_written)
     }
 
@@ -733,12 +733,19 @@ impl<F: FnMut(Request<()>) -> InterceptedRequestResult> BigTable<F> {
             new_row_data.push((row_key, vec![("proto".to_string(), data)]));
         }
 
-        let result = self.put_row_data(table, "x", &new_row_data, overwrite).await;
+        let result = self
+            .put_row_data(table, "x", &new_row_data, overwrite)
+            .await;
         match result {
             Err(err) => {
                 for (key, data) in new_row_data.iter() {
                     for (col, cell) in data.iter() {
-                        error!("Error writing account key {} col {} len: {}", *key, col, cell.len());
+                        error!(
+                            "Error writing account key {} col {} len: {}",
+                            *key,
+                            col,
+                            cell.len()
+                        );
                     }
                 }
 

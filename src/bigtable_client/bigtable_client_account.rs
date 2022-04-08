@@ -164,7 +164,7 @@ impl AsyncBigtableClient {
         &mut self,
         account: &ReplicaAccountInfo,
         slot: u64,
-        is_startup: bool,
+        _is_startup: bool,
     ) -> Result<(), GeyserPluginError> {
         let account = DbAccountInfo::new(account, slot);
 

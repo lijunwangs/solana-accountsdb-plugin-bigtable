@@ -205,7 +205,7 @@ impl GeyserPlugin for GeyserPluginBigtable {
         match &mut self.client {
             None => {}
             Some(client) => {
-                client.join();
+                client.join().unwrap();
             }
         }
     }

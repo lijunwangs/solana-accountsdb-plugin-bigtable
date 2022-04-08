@@ -14,7 +14,7 @@ impl BufferedBigtableClient {
     pub async fn update_account(
         &mut self,
         account: DbAccountInfo,
-        is_startup: bool,
+        _is_startup: bool,
     ) -> Result<(), GeyserPluginError> {
         let account_cells = {
             self.slots_at_startup.insert(account.slot);
@@ -35,13 +35,6 @@ impl BufferedBigtableClient {
             }
         };
 
-        // } else {
-        //     vec![(
-        //         Pubkey::new(account.pubkey()).to_string(),
-        //         accounts::Account::from(&account),
-        //     )]
-        // };
-
         let client = self.client.lock().unwrap();
         let result = client
             .client
@@ -52,7 +45,11 @@ impl BufferedBigtableClient {
             Err(err) => {
                 error!("Error persisting into the database: {}", err);
                 for (key, account) in account_cells.iter() {
-                    error!("Error persisting into the database: pubkey: {}, len: {} ", key, account.data.len());
+                    error!(
+                        "Error persisting into the database: pubkey: {}, len: {} ",
+                        key,
+                        account.data.len()
+                    );
                 }
                 Err(GeyserPluginError::Custom(Box::new(err)))
             }
