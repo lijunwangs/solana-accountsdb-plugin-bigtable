@@ -11,7 +11,7 @@ use {
     log::*,
     solana_core::validator::ValidatorConfig,
     solana_geyser_plugin_bigtable::{
-        bigtable_client::SimpleBigtableClient, geyser_plugin_bigtable::GeyserPluginBigtableConfig,
+        parallel_bigtable_client::BufferedBigtableClient, geyser_plugin_bigtable::GeyserPluginBigtableConfig,
     },
     solana_local_cluster::{
         cluster::Cluster,
@@ -255,7 +255,7 @@ async fn test_bigtable_plugin() {
     file.read_to_string(&mut contents).unwrap();
     let plugin_config: GeyserPluginBigtableConfig = serde_json::from_str(&contents).unwrap();
 
-    let result = SimpleBigtableClient::connect_to_db(&plugin_config).await;
+    let result = BufferedBigtableClient::connect_to_db(&plugin_config).await;
     if result.is_err() {
         error!("Failed to connecto the Bigtable database. Please setup the database to run the integration tests. {:?}", result.err());
         return;

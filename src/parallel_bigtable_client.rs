@@ -7,16 +7,14 @@ pub mod transaction;
 use {
     crate::{
         bigtable::BigTableConnection as Client,
-        bigtable_client::{
-            abort,
-            bigtable_client_account_index::TokenSecondaryIndexEntry,
-            bigtable_client_block_metadata::{DbBlockInfo, UpdateBlockMetadataRequest},
-            bigtable_client_transaction::{build_db_transaction, LogTransactionRequest},
-            DEFAULT_BIGTABLE_INSTANCE, DEFAULT_STORE_ACCOUNT_HISTORICAL_DATA,
-        },
         geyser_plugin_bigtable::{GeyserPluginBigtableConfig, GeyserPluginBigtableError},
-        parallel_bigtable_client::account::{
-            DbAccountInfo, ReadableAccountInfo, UpdateAccountRequest,
+        parallel_bigtable_client::{
+            account::{
+                DbAccountInfo, ReadableAccountInfo, UpdateAccountRequest,
+            },
+            account_index::TokenSecondaryIndexEntry,
+            block_metadata::{DbBlockInfo, UpdateBlockMetadataRequest},
+            transaction::{build_db_transaction, LogTransactionRequest}
         },
     },
     crossbeam_channel::{bounded, Receiver, RecvTimeoutError, Sender},
@@ -39,6 +37,19 @@ use {
     tokio::runtime::Runtime,
 };
 
+pub fn abort() -> ! {
+    #[cfg(not(test))]
+    {
+        // standard error is usually redirected to a log file, cry for help on standard output as
+        // well
+        eprintln!("Validator process aborted. The validator log may contain further details");
+        std::process::exit(1);
+    }
+
+    #[cfg(test)]
+    panic!("process::exit(1) is intercepted for friendly test failure...");
+}
+
 #[allow(unused_variables)]
 
 /// The maximum asynchronous requests allowed in the channel to avoid excessive
@@ -47,6 +58,10 @@ const MAX_ASYNC_REQUESTS: usize = 40960;
 const DEFAULT_THREADS_COUNT: usize = 100;
 const DEFAULT_ACCOUNTS_INSERT_BATCH_SIZE: usize = 10;
 const DEFAULT_PANIC_ON_DB_ERROR: bool = false;
+
+/// The default bigtable instance name
+pub const DEFAULT_BIGTABLE_INSTANCE: &str = "solana-geyser-plugin-bigtable";
+pub const DEFAULT_STORE_ACCOUNT_HISTORICAL_DATA: bool = false;
 
 struct UpdateSlotRequest {
     slot: u64,

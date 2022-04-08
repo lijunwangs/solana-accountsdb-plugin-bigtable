@@ -1,5 +1,5 @@
 use {
-    crate::bigtable_client::bigtable_client_transaction::DbReward,
+    crate::parallel_bigtable_client::transaction::DbReward,
     solana_geyser_plugin_interface::geyser_plugin_interface::ReplicaBlockInfo,
 };
 
