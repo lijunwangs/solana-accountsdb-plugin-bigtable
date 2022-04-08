@@ -25,3 +25,34 @@ Depending on what operation mode is required, either the
 `https://www.googleapis.com/auth/bigtable.data` or
 `https://www.googleapis.com/auth/bigtable.data.readonly` OAuth scope will be
 requested using the provided credentials.
+
+### Object Models
+
+Account and slot metadata are supported with plan to support transaction data, block metadata and account secondary indexes.
+
+The storage-proto contains the gRPC models for the objects. For example for accounts:
+
+```
+message account {
+    bytes pubkey = 1;
+    bytes owner = 2;
+    uint64 lamports = 3;
+    uint64 slot = 4;
+    bool executable = 5;
+    uint64 rent_epoch = 6;
+    bytes data = 7;
+    uint64 write_version = 8;
+    UnixTimestamp updated_on = 9;
+}
+```
+
+The following are the tables in the Postgres database
+
+| Table         | Description             |
+|:--------------|:------------------------|
+| account       | Account data            |
+| slot          | Slot metadata           |
+
+
+The model data is encoded into binary format and then compressed using `compress_best`
+src/compression.rs.
