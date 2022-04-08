@@ -9,13 +9,15 @@ use {
         bigtable::BigTableConnection as Client,
         bigtable_client::{
             abort,
-            bigtable_client_account::{DbAccountInfo, ReadableAccountInfo, UpdateAccountRequest},
             bigtable_client_account_index::TokenSecondaryIndexEntry,
             bigtable_client_block_metadata::{DbBlockInfo, UpdateBlockMetadataRequest},
             bigtable_client_transaction::{build_db_transaction, LogTransactionRequest},
             DEFAULT_BIGTABLE_INSTANCE, DEFAULT_STORE_ACCOUNT_HISTORICAL_DATA,
         },
         geyser_plugin_bigtable::{GeyserPluginBigtableConfig, GeyserPluginBigtableError},
+        parallel_bigtable_client::account::{
+            DbAccountInfo, ReadableAccountInfo, UpdateAccountRequest,
+        },
     },
     crossbeam_channel::{bounded, Receiver, RecvTimeoutError, Sender},
     log::*,
