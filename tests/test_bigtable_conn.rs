@@ -5,7 +5,7 @@
 use {
     log::*,
     solana_bigtable_connection::bigtable::BigTableConnection,
-    solana_geyser_plugin_bigtable::convert::accounts,
+    solana_bigtable_geyser_models::models::accounts,
     solana_sdk::pubkey::Pubkey,
     std::time::SystemTime,
 };

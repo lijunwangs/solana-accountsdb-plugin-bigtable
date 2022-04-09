@@ -1,6 +1,7 @@
 use {
-    crate::{convert::slots, parallel_bigtable_client::BufferedBigtableClient},
+    crate::{parallel_bigtable_client::BufferedBigtableClient},
     log::*,
+    solana_bigtable_geyser_models::models::slots,
     solana_geyser_plugin_interface::geyser_plugin_interface::GeyserPluginError,
     std::time::SystemTime,
 };
