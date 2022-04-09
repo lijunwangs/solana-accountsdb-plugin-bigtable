@@ -4,7 +4,8 @@
 /// See this project's README.md on testing in Development Environment.
 use {
     log::*,
-    solana_geyser_plugin_bigtable::{bigtable::BigTableConnection, convert::accounts},
+    solana_bigtable_connection::bigtable::BigTableConnection,
+    solana_geyser_plugin_bigtable::convert::accounts,
     solana_sdk::pubkey::Pubkey,
     std::time::SystemTime,
 };

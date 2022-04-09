@@ -6,7 +6,6 @@ pub mod transaction;
 
 use {
     crate::{
-        bigtable::BigTableConnection as Client,
         geyser_plugin_bigtable::{GeyserPluginBigtableConfig, GeyserPluginBigtableError},
         parallel_bigtable_client::{
             account::{
@@ -19,9 +18,10 @@ use {
     },
     crossbeam_channel::{bounded, Receiver, RecvTimeoutError, Sender},
     log::*,
+    solana_bigtable_connection::bigtable::BigTableConnection as Client,
     solana_geyser_plugin_interface::geyser_plugin_interface::{
         GeyserPluginError, ReplicaAccountInfo, ReplicaBlockInfo, ReplicaTransactionInfo, SlotStatus,
-    },
+    },    
     solana_measure::measure::Measure,
     solana_metrics::*,
     solana_sdk::timing::AtomicInterval,
