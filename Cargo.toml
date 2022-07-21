@@ -3,7 +3,7 @@ authors = ["Solana Maintainers <maintainers@solana.foundation>"]
 edition = "2021"
 name = "solana-geyser-plugin-bigtable"
 description = "The Solana AccountsDb plugin for Bigtable database."
-version = "1.10.5"
+version = "1.10.31"
 repository = "https://github.com/solana-labs/solana-geyser-plugin-bigtable"
 license = "Apache-2.0"
 homepage = "https://solana.com/"
@@ -31,16 +31,16 @@ serde = "1.0.136"
 serde_derive = "1.0.136"
 serde_json = "1.0.74"
 smpl_jwt = "0.6.1"
-solana-account-decoder = { version = "=1.10.5" }
+solana-account-decoder = { version = "=1.10.31" }
 solana-bigtable-connection = { version = "=1.0.0" }
-solana-bigtable-geyser-models = { version = "=1.10.5" }
-solana-geyser-plugin-interface = { version = "=1.10.5" }
-solana-logger = { version = "=1.10.5" }
-solana-measure = { version = "=1.10.5" }
-solana-metrics = { version = "=1.10.5" }
-solana-runtime = { version = "=1.10.5" }
-solana-sdk = { version = "=1.10.5" }
-solana-transaction-status = { version = "=1.10.5" }
+solana-bigtable-geyser-models = { path = '../solana-bigtable-geyser-models' }
+solana-geyser-plugin-interface = { version = "=1.10.31" }
+solana-logger = { version = "=1.10.31" }
+solana-measure = { version = "=1.10.31" }
+solana-metrics = { version = "=1.10.31" }
+solana-runtime = { version = "=1.10.31" }
+solana-sdk = { version = "=1.10.31" }
+solana-transaction-status = { version = "=1.10.31" }
 thiserror = "1.0.30"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.6", features = ["codec", "compat"] }
@@ -53,11 +53,11 @@ libloading = "0.7.2"
 rand = "0.8.4"
 
 serial_test = "0.5.1"
-solana-account-decoder = { version = "=1.10.5" }
-solana-core = { version = "=1.10.5" }
-solana-local-cluster = { version = "=1.10.5" }
-solana-net-utils = { version = "=1.10.5" }
-solana-streamer = { version = "=1.10.5" }
+solana-account-decoder = { version = "=1.10.31" }
+solana-core = { version = "=1.10.31" }
+solana-local-cluster = { version = "=1.10.31" }
+solana-net-utils = { version = "=1.10.31" }
+solana-streamer = { version = "=1.10.31" }
 tempfile = "3.2.0"
 
 [package.metadata.docs.rs]
