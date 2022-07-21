@@ -8,7 +8,7 @@
 
 set -e
 
-if [ ! -n $1 ]
+if [ -n "$1" ]
 then
   instance=$1
 else
