@@ -78,6 +78,9 @@ pub struct GeyserPluginBigtableConfig {
 
     /// Controls whetherf to index the token mints. The default is false
     pub index_token_mint: Option<bool>,
+
+    /// Controls whether to perform any writes during start-up phase. The default is true
+    pub write_during_startup: Option<bool>
 }
 
 #[derive(Error, Debug)]

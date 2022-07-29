@@ -309,6 +309,7 @@ pub struct ParallelBigtableClient {
     initialized_worker_count: Arc<AtomicUsize>,
     sender: Sender<DbWorkItem>,
     last_report: AtomicInterval,
+    do_work_on_startup: bool,
 }
 
 impl ParallelBigtableClient {
@@ -383,6 +384,7 @@ impl ParallelBigtableClient {
             startup_done_count,
             initialized_worker_count,
             sender,
+            do_work_on_startup: config.write_during_startup.unwrap_or(true)
         })
     }
 
@@ -409,6 +411,9 @@ impl ParallelBigtableClient {
         slot: u64,
         is_startup: bool,
     ) -> Result<(), GeyserPluginError> {
+        if self.should_skip_work() {
+            return Ok(())
+        }
         if self.last_report.should_update(30000) {
             datapoint_debug!(
                 "bigtable-plugin-stats",
@@ -459,6 +464,9 @@ impl ParallelBigtableClient {
         parent: Option<u64>,
         status: SlotStatus,
     ) -> Result<(), GeyserPluginError> {
+        if self.should_skip_work() {
+            return Ok(())
+        }
         if let Err(err) = self
             .sender
             .send(DbWorkItem::UpdateSlot(Box::new(UpdateSlotRequest {
@@ -478,6 +486,9 @@ impl ParallelBigtableClient {
         &mut self,
         block_info: &ReplicaBlockInfo,
     ) -> Result<(), GeyserPluginError> {
+        if self.should_skip_work() {
+            return Ok(())
+        }
         if let Err(err) = self.sender.send(DbWorkItem::UpdateBlockMetadata(Box::new(
             UpdateBlockMetadataRequest {
                 block_info: DbBlockInfo::from(block_info),
@@ -531,6 +542,9 @@ impl ParallelBigtableClient {
         transaction_info: &ReplicaTransactionInfo,
         slot: u64,
     ) -> Result<(), GeyserPluginError> {
+        if self.should_skip_work() {
+            return Ok(())
+        }
         let wrk_item = DbWorkItem::LogTransaction(Box::new(Self::build_transaction_request(
             slot,
             transaction_info,
@@ -542,5 +556,9 @@ impl ParallelBigtableClient {
             });
         }
         Ok(())
+    }
+
+    fn should_skip_work(&self) -> bool {
+        !self.do_work_on_startup && !self.is_startup_done.load(Ordering::Relaxed)
     }
 }
