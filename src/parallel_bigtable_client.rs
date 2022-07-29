@@ -18,7 +18,7 @@ use {
     },
     crossbeam_channel::{bounded, Receiver, RecvTimeoutError, Sender},
     log::*,
-    solana_bigtable_connection::bigtable::BigTableConnection as Client,
+    solana_bigtable_connection::{bigtable::BigTableConnection as Client, CredentialType},
     solana_geyser_plugin_interface::geyser_plugin_interface::{
         GeyserPluginError, ReplicaAccountInfo, ReplicaBlockInfo, ReplicaTransactionInfo, SlotStatus,
     },    
@@ -61,6 +61,7 @@ const DEFAULT_PANIC_ON_DB_ERROR: bool = false;
 
 /// The default bigtable instance name
 pub const DEFAULT_BIGTABLE_INSTANCE: &str = "solana-geyser-plugin-bigtable";
+pub const DEFAULT_APP_PROFILE_ID: &str = "";
 pub const DEFAULT_STORE_ACCOUNT_HISTORICAL_DATA: bool = false;
 
 struct UpdateSlotRequest {
@@ -102,9 +103,13 @@ impl BufferedBigtableClient {
                 .instance
                 .as_ref()
                 .unwrap_or(&DEFAULT_BIGTABLE_INSTANCE.to_string()),
+            config
+                .app_profile_id
+                .as_ref()
+                .unwrap_or(&DEFAULT_APP_PROFILE_ID.to_string()),
             false,
             config.timeout,
-            config.credential_path.clone(),
+            CredentialType::Filepath(config.credential_path.clone()),
         )
         .await;
 
