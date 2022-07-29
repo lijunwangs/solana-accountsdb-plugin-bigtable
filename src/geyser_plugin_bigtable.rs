@@ -55,6 +55,9 @@ pub struct GeyserPluginBigtableConfig {
     /// The name of the bigtable instance. The default is 'solana-geyser-plugin-bigtable'.
     pub instance: Option<String>,
 
+    /// Bigtable application profile Id. The default is ''
+    pub app_profile_id: Option<String>,
+
     /// Bigtable timeout
     pub timeout: Option<Duration>,
 
