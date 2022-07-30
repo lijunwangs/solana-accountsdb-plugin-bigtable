@@ -21,7 +21,7 @@ use {
     solana_bigtable_connection::{bigtable::BigTableConnection as Client, CredentialType},
     solana_geyser_plugin_interface::geyser_plugin_interface::{
         GeyserPluginError, ReplicaAccountInfo, ReplicaBlockInfo, ReplicaTransactionInfo, SlotStatus,
-    },    
+    },
     solana_measure::measure::Measure,
     solana_metrics::*,
     solana_sdk::timing::AtomicInterval,
@@ -184,7 +184,7 @@ impl BigtableClientWorker {
         &mut self,
         account: DbAccountInfo,
         is_startup: bool,
-    ) -> Result<(), GeyserPluginError> {
+    ) -> Result<(usize, usize), GeyserPluginError> {
         self.runtime
             .block_on(self.client.update_account(account, is_startup))
     }
@@ -194,7 +194,7 @@ impl BigtableClientWorker {
         slot: u64,
         parent: Option<u64>,
         status: SlotStatus,
-    ) -> Result<(), GeyserPluginError> {
+    ) -> Result<(usize, usize), GeyserPluginError> {
         info!("Updating slot {:?} at with status {:?}", slot, status);
         self.runtime
             .block_on(self.client.update_slot(slot, parent, status.as_str()))
@@ -241,23 +241,29 @@ impl BigtableClientWorker {
             match work {
                 Ok(work) => match work {
                     DbWorkItem::UpdateAccount(request) => {
-                        if let Err(err) = self.update_account(request.account, request.is_startup) {
-                            error!("Failed to update account: ({})", err);
-                            if panic_on_db_errors {
-                                abort();
+                        match self.update_account(request.account, request.is_startup) {
+                            Err(err) => {
+                                error!("Failed to update account: ({})", err);
+                                if panic_on_db_errors {
+                                    abort();
+                                }
                             }
+                            Ok(sizes) => Self::update_size_stats(sizes)
                         }
                     }
                     DbWorkItem::UpdateSlot(request) => {
-                        if let Err(err) = self.update_slot_status(
+                        match self.update_slot_status(
                             request.slot,
                             request.parent,
                             request.slot_status,
                         ) {
-                            error!("Failed to update slot: ({})", err);
-                            if panic_on_db_errors {
-                                abort();
+                            Err(err) => {
+                                error!("Failed to update slot: ({})", err);
+                                if panic_on_db_errors {
+                                    abort();
+                                }
                             }
+                            Ok(sizes) => Self::update_size_stats(sizes)
                         }
                     }
                     DbWorkItem::LogTransaction(transaction_log_info) => {
@@ -303,6 +309,12 @@ impl BigtableClientWorker {
             }
         }
         Ok(())
+    }
+
+    fn update_size_stats(sizes: (usize, usize)) {
+        let (written_size, raw_size) = sizes;
+        inc_new_counter_info!("geyser-bigtable-written-bytes", written_size, 1000000);
+        inc_new_counter_info!("geyser-bigtable-raw-bytes", raw_size, 1000000);
     }
 }
 
