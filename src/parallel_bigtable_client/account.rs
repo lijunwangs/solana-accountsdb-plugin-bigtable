@@ -1,6 +1,7 @@
 use {
     crate::{parallel_bigtable_client::BufferedBigtableClient},
     log::*,
+    prost::Message,
     solana_bigtable_geyser_models::models::{accounts},
     solana_geyser_plugin_interface::geyser_plugin_interface::{
         GeyserPluginError, ReplicaAccountInfo,
@@ -138,7 +139,7 @@ impl BufferedBigtableClient {
         &mut self,
         account: DbAccountInfo,
         _is_startup: bool,
-    ) -> Result<(), GeyserPluginError> {
+    ) -> Result<(usize, usize), GeyserPluginError> {
         let account_cells = {
             self.slots_at_startup.insert(account.slot);
             self.pending_account_updates.push(account);
@@ -154,9 +155,10 @@ impl BufferedBigtableClient {
                     })
                     .collect::<Vec<(String, accounts::Account)>>()
             } else {
-                return Ok(());
+                return Ok((0, 0));
             }
         };
+        let raw_size = account_cells.iter().map(|(_, m)| m.encoded_len()).sum();
 
         let client = self.client.lock().unwrap();
         let result = client
@@ -164,7 +166,7 @@ impl BufferedBigtableClient {
             .put_protobuf_cells_with_retry::<accounts::Account>("account", &account_cells, true)
             .await;
         match result {
-            Ok(_size) => Ok(()),
+            Ok(written_size) => Ok((written_size, raw_size)),
             Err(err) => {
                 error!("Error persisting into the database: {}", err);
                 for (key, account) in account_cells.iter() {
