@@ -127,7 +127,7 @@ impl From<&DbAccountInfo> for accounts::Account {
             data: account.data().to_vec(),
             write_version: account.write_version as u64,
             updated_on: Some(accounts::UnixTimestamp {
-                timestamp: SystemTime::now().elapsed().unwrap().as_secs() as i64,
+                timestamp: SystemTime::UNIX_EPOCH.elapsed().unwrap().as_millis() as i64,
             }),
         }
     }
