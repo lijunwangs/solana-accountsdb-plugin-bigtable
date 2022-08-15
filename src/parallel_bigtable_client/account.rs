@@ -141,7 +141,6 @@ impl BufferedBigtableClient {
         _is_startup: bool,
     ) -> Result<(usize, usize), GeyserPluginError> {
         let account_cells = {
-            self.slots_at_startup.insert(account.slot);
             self.pending_account_updates.push(account);
 
             if self.pending_account_updates.len() == self.batch_size {
