@@ -1,28 +1,31 @@
 use {
-    crate::{parallel_bigtable_client::BufferedBigtableClient},
-    log::*,
-    prost::Message,
+    crate::parallel_bigtable_client::BufferedBigtableClient, log::*, prost::Message,
     solana_bigtable_geyser_models::models::slots,
     solana_geyser_plugin_interface::geyser_plugin_interface::GeyserPluginError,
-    std::time::SystemTime,
+    solana_geyser_plugin_interface::geyser_plugin_interface::SlotStatus, std::time::Duration,
 };
+
+pub struct UpdateSlotRequest {
+    pub slot: u64,
+    pub parent: Option<u64>,
+    pub slot_status: SlotStatus,
+    pub updated_since_epoch: Duration,
+}
 
 impl BufferedBigtableClient {
     /// Update or insert a single account
     pub async fn update_slot(
         &mut self,
-        slot: u64,
-        parent: Option<u64>,
-        status: &str,
+        request: UpdateSlotRequest,
     ) -> Result<(usize, usize), GeyserPluginError> {
         let slot_cells = vec![(
-            slot.to_string(),
+            request.slot.to_string(),
             slots::Slot {
-                slot,
-                parent,
-                status: status.to_string(),
+                slot: request.slot,
+                parent: request.parent,
+                status: request.slot_status.as_str().to_string(),
                 updated_on: Some(slots::UnixTimestamp {
-                    timestamp: SystemTime::now().elapsed().unwrap().as_secs() as i64,
+                    timestamp: request.updated_since_epoch.as_millis() as i64,
                 }),
             },
         )];
