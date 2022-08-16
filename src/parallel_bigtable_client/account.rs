@@ -7,7 +7,7 @@ use {
         GeyserPluginError, ReplicaAccountInfo,
     },
     solana_sdk::pubkey::Pubkey,
-    std::time::SystemTime,
+    std::time::{Duration, SystemTime},
 };
 
 impl Eq for DbAccountInfo {}
@@ -22,6 +22,7 @@ pub struct DbAccountInfo {
     pub data: Vec<u8>,
     pub slot: u64,
     pub write_version: u64,
+    pub updated_since_epoch: Duration,
 }
 
 pub struct UpdateAccountRequest {
@@ -41,6 +42,7 @@ impl DbAccountInfo {
             data,
             slot,
             write_version: account.write_version(),
+            updated_since_epoch: SystemTime::UNIX_EPOCH.elapsed().unwrap(),
         }
     }
 }
@@ -127,7 +129,7 @@ impl From<&DbAccountInfo> for accounts::Account {
             data: account.data().to_vec(),
             write_version: account.write_version as u64,
             updated_on: Some(accounts::UnixTimestamp {
-                timestamp: SystemTime::now().elapsed().unwrap().as_secs() as i64,
+                timestamp: account.updated_since_epoch.as_millis() as i64,
             }),
         }
     }

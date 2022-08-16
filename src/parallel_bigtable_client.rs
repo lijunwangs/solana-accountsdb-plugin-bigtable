@@ -8,16 +8,15 @@ use {
     crate::{
         geyser_plugin_bigtable::{GeyserPluginBigtableConfig, GeyserPluginBigtableError},
         parallel_bigtable_client::{
-            account::{
-                DbAccountInfo, ReadableAccountInfo, UpdateAccountRequest,
-            },
+            account::{DbAccountInfo, ReadableAccountInfo, UpdateAccountRequest},
             account_index::TokenSecondaryIndexEntry,
             block_metadata::{DbBlockInfo, UpdateBlockMetadataRequest},
-            transaction::{build_db_transaction, LogTransactionRequest}
+            transaction::{build_db_transaction, LogTransactionRequest},
         },
     },
     crossbeam_channel::{bounded, Receiver, RecvTimeoutError, Sender},
     log::*,
+    slot::UpdateSlotRequest,
     solana_bigtable_connection::{bigtable::BigTableConnection as Client, CredentialType},
     solana_geyser_plugin_interface::geyser_plugin_interface::{
         GeyserPluginError, ReplicaAccountInfo, ReplicaBlockInfo, ReplicaTransactionInfo, SlotStatus,
@@ -25,6 +24,7 @@ use {
     solana_measure::measure::Measure,
     solana_metrics::*,
     solana_sdk::timing::AtomicInterval,
+    std::time::SystemTime,
     std::{
         sync::{
             atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -62,12 +62,6 @@ const DEFAULT_PANIC_ON_DB_ERROR: bool = false;
 pub const DEFAULT_BIGTABLE_INSTANCE: &str = "solana-geyser-plugin-bigtable";
 pub const DEFAULT_APP_PROFILE_ID: &str = "";
 pub const DEFAULT_STORE_ACCOUNT_HISTORICAL_DATA: bool = false;
-
-struct UpdateSlotRequest {
-    slot: u64,
-    parent: Option<u64>,
-    slot_status: SlotStatus,
-}
 
 #[warn(clippy::large_enum_variant)]
 enum DbWorkItem {
@@ -188,13 +182,13 @@ impl BigtableClientWorker {
 
     fn update_slot_status(
         &mut self,
-        slot: u64,
-        parent: Option<u64>,
-        status: SlotStatus,
+        request: UpdateSlotRequest,
     ) -> Result<(usize, usize), GeyserPluginError> {
-        info!("Updating slot {:?} at with status {:?}", slot, status);
-        self.runtime
-            .block_on(self.client.update_slot(slot, parent, status.as_str()))
+        info!(
+            "Updating slot {:?} at with status {:?}",
+            request.slot, request.slot_status
+        );
+        self.runtime.block_on(self.client.update_slot(request))
     }
 
     fn notify_end_of_startup(&mut self) -> Result<(), GeyserPluginError> {
@@ -245,24 +239,18 @@ impl BigtableClientWorker {
                                     abort();
                                 }
                             }
-                            Ok(sizes) => Self::update_size_stats(sizes)
+                            Ok(sizes) => Self::update_size_stats(sizes),
                         }
                     }
-                    DbWorkItem::UpdateSlot(request) => {
-                        match self.update_slot_status(
-                            request.slot,
-                            request.parent,
-                            request.slot_status,
-                        ) {
-                            Err(err) => {
-                                error!("Failed to update slot: ({})", err);
-                                if panic_on_db_errors {
-                                    abort();
-                                }
+                    DbWorkItem::UpdateSlot(request) => match self.update_slot_status(*request) {
+                        Err(err) => {
+                            error!("Failed to update slot: ({})", err);
+                            if panic_on_db_errors {
+                                abort();
                             }
-                            Ok(sizes) => Self::update_size_stats(sizes)
                         }
-                    }
+                        Ok(sizes) => Self::update_size_stats(sizes),
+                    },
                     DbWorkItem::LogTransaction(transaction_log_info) => {
                         if let Err(err) = self.log_transaction(*transaction_log_info) {
                             error!("Failed to update transaction: ({})", err);
@@ -398,7 +386,7 @@ impl ParallelBigtableClient {
             startup_done_count,
             initialized_worker_count,
             sender,
-            do_work_on_startup: config.write_during_startup.unwrap_or(true)
+            do_work_on_startup: config.write_during_startup.unwrap_or(true),
         })
     }
 
@@ -426,7 +414,7 @@ impl ParallelBigtableClient {
         is_startup: bool,
     ) -> Result<(), GeyserPluginError> {
         if self.should_skip_work() {
-            return Ok(())
+            return Ok(());
         }
         if self.last_report.should_update(30000) {
             datapoint_debug!(
@@ -479,7 +467,7 @@ impl ParallelBigtableClient {
         status: SlotStatus,
     ) -> Result<(), GeyserPluginError> {
         if self.should_skip_work() {
-            return Ok(())
+            return Ok(());
         }
         if let Err(err) = self
             .sender
@@ -487,6 +475,7 @@ impl ParallelBigtableClient {
                 slot,
                 parent,
                 slot_status: status,
+                updated_since_epoch: SystemTime::UNIX_EPOCH.elapsed().unwrap(),
             })))
         {
             return Err(GeyserPluginError::SlotStatusUpdateError {
@@ -501,7 +490,7 @@ impl ParallelBigtableClient {
         block_info: &ReplicaBlockInfo,
     ) -> Result<(), GeyserPluginError> {
         if self.should_skip_work() {
-            return Ok(())
+            return Ok(());
         }
         if let Err(err) = self.sender.send(DbWorkItem::UpdateBlockMetadata(Box::new(
             UpdateBlockMetadataRequest {
@@ -557,7 +546,7 @@ impl ParallelBigtableClient {
         slot: u64,
     ) -> Result<(), GeyserPluginError> {
         if self.should_skip_work() {
-            return Ok(())
+            return Ok(());
         }
         let wrk_item = DbWorkItem::LogTransaction(Box::new(Self::build_transaction_request(
             slot,
