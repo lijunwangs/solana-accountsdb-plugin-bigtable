@@ -26,7 +26,6 @@ use {
     solana_metrics::*,
     solana_sdk::timing::AtomicInterval,
     std::{
-        collections::HashSet,
         sync::{
             atomic::{AtomicBool, AtomicUsize, Ordering},
             Arc, Mutex,
@@ -86,7 +85,6 @@ pub struct BufferedBigtableClient {
     client: Mutex<BigtableClientWrapper>,
     store_account_historical_data: bool,
     batch_size: usize,
-    slots_at_startup: HashSet<u64>,
     pending_account_updates: Vec<DbAccountInfo>,
     index_token_owner: bool,
     index_token_mint: bool,
@@ -149,7 +147,6 @@ impl BufferedBigtableClient {
             store_account_historical_data,
             pending_token_owner_index: Vec::with_capacity(batch_size),
             pending_token_mint_index: Vec::with_capacity(batch_size),
-            slots_at_startup: HashSet::default(),
         })
     }
 }
