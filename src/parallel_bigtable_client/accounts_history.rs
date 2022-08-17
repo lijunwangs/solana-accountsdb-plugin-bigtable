@@ -19,9 +19,9 @@ impl AccountsHistoryBatcher {
         self.updates.push(value);
     }
 
-    pub fn flush<F, E>(&mut self, slot: u64, batch_cb: F) -> Result<(), E>
+    pub fn flush<F, E>(&mut self, slot: u64, mut batch_cb: F) -> Result<(), E>
     where
-        F: Fn(Vec<DbAccountInfo>) -> Result<(), E>,
+        F: FnMut(Vec<DbAccountInfo>) -> Result<(), E>,
     {
         if slot < self.updates.first().map_or(u64::MAX, |acc| acc.slot) {
             return Ok(());
@@ -68,6 +68,9 @@ fn as_account_batch_item(prev: &DbAccountInfo, next: &DbAccountInfo) -> accounts
         rent_epoch: prev.rent_epoch - next.rent_epoch,
         slot: next.slot - prev.slot,
         write_version: next.write_version - prev.write_version,
+        updated_on: Some(accounts::UnixTimestamp {
+            timestamp: (next.updated_since_epoch - prev.updated_since_epoch).as_millis() as i64,
+        }),
         ..accounts::Account::default()
     }
 }
@@ -79,24 +82,19 @@ impl BufferedBigtableClient {
     ) -> Result<(usize, usize), GeyserPluginError> {
         let (key, batch) = {
             let mut batch = accounts::AccountsBatch::default();
-            if let Some(mut prev) = accounts.first() {
-                let key = format!(
-                    "{}/{:016X}/{:016X}",
-                    Pubkey::new(prev.pubkey()),
-                    !prev.slot,
-                    !prev.write_version
-                );
-                batch.accounts.push(prev.into());
-                for next in accounts.iter().skip(1) {
-                    batch.accounts.push(as_account_batch_item(&prev, &next));
-                    prev = next;
-                }
-                (key, batch)
-            } else {
-                return Err(GeyserPluginError::AccountsUpdateError {
-                    msg: "internal error, empty batch".into(),
-                });
+            let mut prev = accounts.first().unwrap();
+            let key = format!(
+                "{}/{:016X}/{:016X}",
+                Pubkey::new(prev.pubkey()),
+                !prev.slot,
+                !prev.write_version
+            );
+            batch.accounts.push(prev.into());
+            for next in accounts.iter().skip(1) {
+                batch.accounts.push(as_account_batch_item(&prev, &next));
+                prev = next;
             }
+            (key, batch)
         };
         let raw_size = batch.encoded_len();
         let cells = vec![(key, batch)];
@@ -118,6 +116,57 @@ impl BufferedBigtableClient {
                 );
                 Err(GeyserPluginError::Custom(Box::new(err)))
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{fmt::Error, time::Duration};
+
+    use solana_sdk::pubkey::Pubkey;
+
+    use crate::parallel_bigtable_client::account::DbAccountInfo;
+
+    use super::AccountsHistoryBatcher;
+
+    #[test]
+    fn batcher() {
+        let mut batcher = AccountsHistoryBatcher::default();
+        batcher.add(example_acc(1, 10));
+        batcher.add(example_acc(2, 10));
+        batcher.add(example_acc(3, 10));
+        batcher.add(example_acc(1, 10));
+        batcher.add(example_acc(3, 11));
+        batcher.add(example_acc(1, 11));
+
+        let mut bs = vec![];
+        batcher.flush::<_, Error>(9, |b| Ok(bs.push(b))).ok();
+
+        batcher.flush::<_, Error>(11, |b| Ok(bs.push(b))).ok();
+        assert_eq!(5, bs.len());
+        let first_batch = bs.get(0).unwrap();
+        assert_eq!(2, first_batch.len());
+        assert_eq!(10, first_batch.get(0).unwrap().slot);
+        assert_eq!(1, *first_batch.get(0).unwrap().pubkey.get(0).unwrap());
+
+        let second_batch = bs.get(1).unwrap();
+        assert_eq!(1, second_batch.len());
+        assert_eq!(10, second_batch.get(0).unwrap().slot);
+        assert_eq!(2, *second_batch.get(0).unwrap().pubkey.get(0).unwrap());
+    }
+
+    fn example_acc(addr: u8, slot: u64) -> DbAccountInfo {
+        DbAccountInfo {
+            pubkey: Pubkey::new_from_array([addr; 32]).to_bytes().to_vec(),
+            lamports: 123,
+            owner: Pubkey::new_from_array([!addr; 32]).to_bytes().to_vec(),
+            executable: true,
+            rent_epoch: 10,
+            data: vec![1, 2, 3, 4, 5, 6],
+            slot: slot,
+            write_version: 20000,
+            updated_since_epoch: Duration::from_secs(12345),
         }
     }
 }
