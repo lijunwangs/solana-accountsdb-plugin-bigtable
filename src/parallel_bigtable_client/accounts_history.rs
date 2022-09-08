@@ -23,28 +23,38 @@ impl AccountsHistoryBatcher {
     where
         F: FnMut(Vec<DbAccountInfo>) -> Result<(), E>,
     {
-        if slot < self.updates.first().map_or(u64::MAX, |acc| acc.slot) {
-            return Ok(());
-        }
-
         self.updates
             .sort_unstable_by(|a, b| Self::order_key(a).cmp(&Self::order_key(b)));
 
+        let drain_end = self
+            .updates
+            .iter()
+            .position(|u| u.slot > slot)
+            .unwrap_or(self.updates.len());
+
+        let mut send_nonempty = |batch: &mut Vec<DbAccountInfo>| {
+            if !batch.is_empty() {
+                batch_cb(mem::take(batch))?
+            }
+            Ok(())
+        };
+
         let mut batch = vec![];
         let mut key = (0, vec![]);
-        for item in mem::take(&mut self.updates).into_iter() {
-            let item_key = Self::batch_key(&item);
-            if Self::is_same_batch(&key, &item_key) {
-                batch.push(item);
-            } else {
-                if !batch.is_empty() {
-                    batch_cb(mem::take(&mut batch))?;
-                }
-                key = (item_key.0, item_key.1.clone());
-                batch.push(item);
+        for item in self.updates.drain(..drain_end) {
+            if item.slot < slot {
+                // Items from slots lower than flushed are considered abandoned.
+                continue;
             }
+
+            let item_key = Self::batch_key(&item);
+            if !Self::is_same_batch(&key, &item_key) {
+                send_nonempty(&mut batch)?;
+                key = (item_key.0, item_key.1.clone());
+            }
+            batch.push(item);
         }
-        batch_cb(batch)
+        send_nonempty(&mut batch)
     }
 
     fn order_key<'a>(acc: &'a DbAccountInfo) -> (u64, &'a Vec<u8>, u64) {
@@ -131,29 +141,31 @@ mod tests {
     use super::AccountsHistoryBatcher;
 
     #[test]
-    fn batcher() {
+    fn batcher() -> Result<(), Error> {
         let mut batcher = AccountsHistoryBatcher::default();
         batcher.add(example_acc(1, 10));
         batcher.add(example_acc(2, 10));
-        batcher.add(example_acc(3, 10));
-        batcher.add(example_acc(1, 10));
+        batcher.add(example_acc(2, 11));
+        batcher.add(example_acc(1, 11));
         batcher.add(example_acc(3, 11));
         batcher.add(example_acc(1, 11));
 
         let mut bs = vec![];
-        batcher.flush::<_, Error>(9, |b| Ok(bs.push(b))).ok();
+        batcher.flush::<_, Error>(9, |b| Ok(bs.push(b)))?;
+        assert_eq!(0, bs.len());
 
-        batcher.flush::<_, Error>(11, |b| Ok(bs.push(b))).ok();
-        assert_eq!(5, bs.len());
+        batcher.flush::<_, Error>(11, |b| Ok(bs.push(b)))?;
+        assert_eq!(3, bs.len());
         let first_batch = bs.get(0).unwrap();
         assert_eq!(2, first_batch.len());
-        assert_eq!(10, first_batch.get(0).unwrap().slot);
+        assert_eq!(11, first_batch.get(0).unwrap().slot);
         assert_eq!(1, *first_batch.get(0).unwrap().pubkey.get(0).unwrap());
 
         let second_batch = bs.get(1).unwrap();
         assert_eq!(1, second_batch.len());
-        assert_eq!(10, second_batch.get(0).unwrap().slot);
+        assert_eq!(11, second_batch.get(0).unwrap().slot);
         assert_eq!(2, *second_batch.get(0).unwrap().pubkey.get(0).unwrap());
+        Ok(())
     }
 
     fn example_acc(addr: u8, slot: u64) -> DbAccountInfo {

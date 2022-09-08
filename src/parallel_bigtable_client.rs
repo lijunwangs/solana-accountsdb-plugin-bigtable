@@ -503,7 +503,7 @@ impl ParallelBigtableClient {
             return Ok(());
         }
 
-        if let Some(batcher) = self.accounts_batcher.as_mut() {
+        if let (SlotStatus::Rooted, Some(batcher)) = (status, self.accounts_batcher.as_mut()) {
             let mut measure = Measure::start("geyser-plugin-bigtable-send-msg");
 
             batcher.flush(slot, |batch| {

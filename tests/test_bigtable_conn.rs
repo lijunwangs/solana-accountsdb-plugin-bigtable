@@ -4,7 +4,7 @@
 /// See this project's README.md on testing in Development Environment.
 use {
     log::*,
-    solana_bigtable_connection::bigtable::BigTableConnection,
+    solana_bigtable_connection::{bigtable::BigTableConnection, CredentialType},
     solana_bigtable_geyser_models::models::accounts,
     solana_sdk::pubkey::Pubkey,
     std::time::SystemTime,
@@ -43,7 +43,8 @@ fn create_account(data_len: usize) -> (Pubkey, accounts::Account) {
 async fn test_bigtable_connection() {
     solana_logger::setup_with_default(RUST_LOG_FILTER);
 
-    let result = BigTableConnection::new("geyser-bigtable", false, None, None).await;
+    let creds = CredentialType::Filepath(None);
+    let result = BigTableConnection::new("geyser-bigtable", "", false, None, creds).await;
 
     if result.is_err() {
         error!("Failed to connecto the Bigtable database. Please setup the database to run the integration tests. {:?}", result.err());
