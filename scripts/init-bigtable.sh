@@ -29,6 +29,7 @@ for table in account account_history slot block transaction; do
     set -x
     "${cbt[@]}" createtable $table
     "${cbt[@]}" createfamily $table x
-    "${cbt[@]}" setgcpolicy $table x "maxversions=1 && maxage=365d"
+    "${cbt[@]}" setgcpolicy $table x maxversions=1
   )
 done
+"${cbt[@]}" setgcpolicy account_history x "maxversions=1 && maxage=365d"
