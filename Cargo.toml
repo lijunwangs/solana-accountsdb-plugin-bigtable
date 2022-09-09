@@ -33,7 +33,7 @@ serde_json = "1.0.74"
 smpl_jwt = "0.6.1"
 solana-account-decoder = { version = "=1.10.31" }
 solana-bigtable-connection = { version = "=1.10.31" }
-solana-bigtable-geyser-models = { version = "=1.10.31" }
+solana-bigtable-geyser-models = { version = "=1.10.31", git = "https://github.com/lijunwangs/solana-bigtable-geyser-models" }
 solana-geyser-plugin-interface = { version = "=1.10.31" }
 solana-logger = { version = "=1.10.31" }
 solana-measure = { version = "=1.10.31" }

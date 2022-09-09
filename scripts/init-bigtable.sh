@@ -20,16 +20,16 @@ cbt=(
   -instance
   "$instance"
 )
-if [[ -n $BIGTABLE_EMULATOR_HOST ]]; then
+if [[ -n "$BIGTABLE_EMULATOR_HOST" ]]; then
   cbt+=(-project emulator)
 fi
 
-for table in account slot block transaction; do
+for table in account account_history slot block transaction; do
   (
     set -x
     "${cbt[@]}" createtable $table
     "${cbt[@]}" createfamily $table x
     "${cbt[@]}" setgcpolicy $table x maxversions=1
-    "${cbt[@]}" setgcpolicy $table x maxage=360d
   )
 done
+"${cbt[@]}" setgcpolicy account_history x "maxversions=1 && maxage=365d"
