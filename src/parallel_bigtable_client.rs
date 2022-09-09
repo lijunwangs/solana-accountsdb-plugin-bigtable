@@ -503,26 +503,30 @@ impl ParallelBigtableClient {
             return Ok(());
         }
 
-        if let (SlotStatus::Rooted, Some(batcher)) = (status, self.accounts_batcher.as_mut()) {
-            let mut measure = Measure::start("geyser-plugin-bigtable-send-msg");
+        if let Some(batcher) = self.accounts_batcher.as_mut() {
+            parent.map(|parent| batcher.update_slot_parent(slot, parent));
 
-            batcher.flush(slot, |batch| {
-                self.sender
-                    .send(DbWorkItem::UpdateAccountsBatch(Box::new(batch)))
-                    .map_err(|err| GeyserPluginError::AccountsUpdateError {
-                        msg: format!(
-                            "Failed to send the accounts batch for {:?}, error: {:?}",
-                            slot, err
-                        ),
-                    })
-            })?;
-            measure.stop();
-            inc_new_counter_debug!(
-                "geyser-plugin-bigtable-send-msg-us",
-                measure.as_us() as usize,
-                1000,
-                1000
-            );
+            if status == SlotStatus::Rooted {
+                let mut measure = Measure::start("geyser-plugin-bigtable-send-msg");
+
+                batcher.flush(slot, |batch| {
+                    self.sender
+                        .send(DbWorkItem::UpdateAccountsBatch(Box::new(batch)))
+                        .map_err(|err| GeyserPluginError::AccountsUpdateError {
+                            msg: format!(
+                                "Failed to send the accounts batch for {:?}, error: {:?}",
+                                slot, err
+                            ),
+                        })
+                })?;
+                measure.stop();
+                inc_new_counter_debug!(
+                    "geyser-plugin-bigtable-send-msg-us",
+                    measure.as_us() as usize,
+                    1000,
+                    1000
+                );
+            }
         }
 
         if let Err(err) = self

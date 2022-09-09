@@ -10,13 +10,47 @@ use {
 };
 
 #[derive(Default)]
+struct SlotGraph {
+    parent_map: std::collections::BTreeMap<u64, u64>,
+}
+
+impl SlotGraph {
+    fn update_parent(&mut self, slot: u64, parent: u64) {
+        self.parent_map
+            .insert(slot, parent)
+            .map(|prev| debug_assert_eq!(prev, parent));
+    }
+
+    fn extract_chain_of(&mut self, mut slot: u64) -> std::collections::HashSet<u64> {
+        // Here we assume that all slots < `slot` will be removed, either being part
+        // of `slot`'s chain or being on abandoned chains.
+        let mut removed = self.parent_map.split_off(&(slot + 1));
+        std::mem::swap(&mut removed, &mut self.parent_map);
+
+        let mut result = std::collections::HashSet::from([slot]);
+        for (current_slot, parent_slot) in removed.iter().rev() {
+            if slot == *current_slot {
+                result.insert(*parent_slot);
+                slot = *parent_slot;
+            }
+        }
+        result
+    }
+}
+
+#[derive(Default)]
 pub struct AccountsHistoryBatcher {
     updates: Vec<DbAccountInfo>,
+    slot_graph: SlotGraph,
 }
 
 impl AccountsHistoryBatcher {
     pub fn add(&mut self, value: DbAccountInfo) {
         self.updates.push(value);
+    }
+
+    pub fn update_slot_parent(&mut self, slot: u64, parent: u64) {
+        self.slot_graph.update_parent(slot, parent);
     }
 
     pub fn flush<F, E>(&mut self, slot: u64, mut batch_cb: F) -> Result<(), E>
@@ -41,9 +75,9 @@ impl AccountsHistoryBatcher {
 
         let mut batch = vec![];
         let mut key = (0, vec![]);
+        let notified_slots = self.slot_graph.extract_chain_of(slot);
         for item in self.updates.drain(..drain_end) {
-            if item.slot < slot {
-                // Items from slots lower than flushed are considered abandoned.
+            if !notified_slots.contains(&item.slot) {
                 continue;
             }
 
@@ -156,16 +190,57 @@ mod tests {
 
         batcher.flush::<_, Error>(11, |b| Ok(bs.push(b)))?;
         assert_eq!(3, bs.len());
-        let first_batch = bs.get(0).unwrap();
-        assert_eq!(2, first_batch.len());
-        assert_eq!(11, first_batch.get(0).unwrap().slot);
-        assert_eq!(1, *first_batch.get(0).unwrap().pubkey.get(0).unwrap());
+        assert_eq!(2, bs[0].len());
+        bs[0].iter().for_each(|item| {
+            assert_eq!(11, item.slot);
+            assert_eq!(1, item.pubkey[0]);
+        });
 
-        let second_batch = bs.get(1).unwrap();
-        assert_eq!(1, second_batch.len());
-        assert_eq!(11, second_batch.get(0).unwrap().slot);
-        assert_eq!(2, *second_batch.get(0).unwrap().pubkey.get(0).unwrap());
+        assert_eq!(1, bs[1].len());
+        assert_eq!(11, bs[1][0].slot);
+        assert_eq!(2, bs[1][0].pubkey[0]);
+
+        assert_eq!(1, bs[2].len());
+        assert_eq!(11, bs[2][0].slot);
+        assert_eq!(3, bs[2][0].pubkey[0]);
+
         Ok(())
+    }
+
+    #[test]
+    fn skipped_slot() {
+        let mut batcher = AccountsHistoryBatcher::default();
+        batcher.add(example_acc(1, 10));
+        batcher.add(example_acc(2, 10));
+        batcher.update_slot_parent(11, 10);
+        batcher.add(example_acc(2, 11));
+        batcher.add(example_acc(1, 11));
+        // New fork, slot 11 will be abandoned
+        batcher.update_slot_parent(12, 10);
+        batcher.add(example_acc(3, 12));
+        batcher.add(example_acc(1, 12));
+
+        let mut bs = vec![];
+        batcher
+            .flush::<_, Error>(12, |b| Ok(bs.push(b)))
+            .expect("flush");
+        assert_eq!(4, bs.len());
+
+        assert_eq!(1, bs[0].len());
+        assert_eq!(10, bs[0][0].slot);
+        assert_eq!(1, bs[0][0].pubkey[0]);
+
+        assert_eq!(1, bs[1].len());
+        assert_eq!(10, bs[1][0].slot);
+        assert_eq!(2, bs[1][0].pubkey[0]);
+
+        assert_eq!(1, bs[2].len());
+        assert_eq!(12, bs[2][0].slot);
+        assert_eq!(1, bs[2][0].pubkey[0]);
+
+        assert_eq!(1, bs[3].len());
+        assert_eq!(12, bs[3][0].slot);
+        assert_eq!(3, bs[3][0].pubkey[0]);
     }
 
     fn example_acc(addr: u8, slot: u64) -> DbAccountInfo {
